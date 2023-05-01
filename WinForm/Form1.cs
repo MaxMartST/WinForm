@@ -16,11 +16,16 @@ namespace WinForm
         public Form1()
         {
             InitializeComponent();
+
             measuringDevices = new();
+            itemsItems =new();
+
             client = new HttpClient();
         }
 
+        const string baseUri = "https://fgis.gost.ru";
         private List<MeasuringDevice> measuringDevices;
+        private List<ItemsItem> itemsItems;
         static HttpClient? client;
 
         private void Form1_Load(object sender, EventArgs e)
@@ -33,11 +38,13 @@ namespace WinForm
             try
             {
                 textBox1.Clear();
+
                 measuringDevices.Clear();
+                itemsItems.Clear();
 
                 ImportExcelFile();
-                var data = await GetData();
-                WriteListDataBox(data);
+                await GetVerificationResults();
+                WriteListDataBox();
 
                 if (measuringDevices.Count > 0)
                     button2.Enabled = true;
@@ -80,17 +87,21 @@ namespace WinForm
                 worksheet.Name = "WorkSheet";
 
                 // Write data
-                int count = measuringDevices.Count;
+                int rows = itemsItems.Count;
 
-                worksheet.Cells[1, 1] = "Рег. Номер СИ";
-                worksheet.Cells[1, 2] = "Разряд СИ";
-                worksheet.Cells[1, 3] = "Модицикация СИ";
+                worksheet.Cells[1, 1] = "Регистрационный номер типа СИ";
+                worksheet.Cells[1, 2] = "Наименование типа СИ";
+                worksheet.Cells[1, 3] = "Обозначение типа СИ";
+                worksheet.Cells[1, 4] = "Модицикация СИ";
+                worksheet.Cells[1, 5] = "Наименование организации-поверителя";
 
-                for (int a = 0, i = 2; a < count; i++, a++)
+                for (int a = 0, i = 2; a < rows; i++, a++)
                 {
-                    worksheet.Cells[i, 1] = measuringDevices[a].RegistrationNumber;
-                    worksheet.Cells[i, 2] = measuringDevices[a].Discharge;
-                    worksheet.Cells[i, 3] = measuringDevices[a].Modification;
+                    worksheet.Cells[i, 1] = itemsItems[a].Mit_number;
+                    worksheet.Cells[i, 2] = itemsItems[a].Mit_title;
+                    worksheet.Cells[i, 3] = itemsItems[a].Mit_notation;
+                    worksheet.Cells[i, 4] = itemsItems[a].Mi_modification;
+                    worksheet.Cells[i, 5] = itemsItems[a].Org_title;
                 }
 
                 worksheet.SaveAs(saveFileDialog1.FileName, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, ExcelApp.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing);
@@ -131,9 +142,23 @@ namespace WinForm
             }
         }
 
-        private void WriteListDataBox(List<ItemsItem> data)
+        //private void WriteListDataBox(List<ItemsItem> data)
+        //{
+        //    foreach (ItemsItem item in data)
+        //    {
+        //        textBox1.Text += $"({DateTime.Now})" + Environment.NewLine;
+        //        textBox1.Text += $"Регистрационный номер типа СИ: {item.Mit_number}" + Environment.NewLine;
+        //        textBox1.Text += $"Наименование типа СИ: {item.Mit_title}" + Environment.NewLine;
+        //        textBox1.Text += $"Обозначение типа СИ: {item.Mit_notation}" + Environment.NewLine;
+        //        textBox1.Text += $"Модификация СИ: {item.Mi_modification}" + Environment.NewLine;
+        //        textBox1.Text += $"Наименование организации-поверителя: {item.Org_title}" + Environment.NewLine;
+        //        textBox1.Text += Environment.NewLine;
+        //    }
+        //}
+
+        private void WriteListDataBox()
         {
-            foreach (ItemsItem item in data)
+            foreach (ItemsItem item in itemsItems)
             {
                 textBox1.Text += $"({DateTime.Now})" + Environment.NewLine;
                 textBox1.Text += $"Регистрационный номер типа СИ: {item.Mit_number}" + Environment.NewLine;
@@ -142,8 +167,6 @@ namespace WinForm
                 textBox1.Text += $"Модификация СИ: {item.Mi_modification}" + Environment.NewLine;
                 textBox1.Text += $"Наименование организации-поверителя: {item.Org_title}" + Environment.NewLine;
                 textBox1.Text += Environment.NewLine;
-
-                //listBox1.Items.Insert(i, item: conrext);
             }
         }
 
@@ -151,8 +174,6 @@ namespace WinForm
         {
             try
             {
-                const string baseUri = "https://fgis.gost.ru";
-
                 client.BaseAddress = new Uri(baseUri);
                 client.DefaultRequestHeaders.Add("User-Agent", "C# console program");
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -170,7 +191,34 @@ namespace WinForm
 
                 return itemsItems;
             }
-            catch (Exception ex)
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        private async Task GetVerificationResults()
+        {
+            client.BaseAddress = new Uri(baseUri);
+            client.DefaultRequestHeaders.Add("User-Agent", "C# console program");
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            try
+            {
+                foreach (var device in measuringDevices)
+                {
+                    var relativeUri = $"fundmetrology/eapi/vri?mit_number=*{device.RegistrationNumber}*&mi_modification=*{device.Modification}*";
+
+                    using (HttpResponseMessage response = await client.GetAsync(relativeUri))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        var resp = await response.Content.ReadAsStringAsync();
+                        Root root = JsonConvert.DeserializeObject<Root>(resp);
+                        itemsItems.AddRange(root.Result.Items);
+                    }
+                }
+            }
+            catch (Exception)
             {
                 throw;
             }
