@@ -6,7 +6,6 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForm.Model;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using ExcelApp = Microsoft.Office.Interop.Excel;
 
 namespace WinForm
@@ -18,7 +17,7 @@ namespace WinForm
             InitializeComponent();
 
             measuringDevices = new();
-            itemsItems =new();
+            itemsItems = new();
 
             client = new HttpClient();
         }
@@ -43,12 +42,23 @@ namespace WinForm
                 itemsItems.Clear();
 
                 ImportExcelFile();
-                await GetVerificationResults();
-                WriteListDataBox();
+                //await GetVerificationResults();
+                //WriteListDataBox();
+
+                var progress = new Progress<string>();
+                progress.ProgressChanged += (s, message) =>
+                {
+                    if (!textBox1.IsDisposed)
+                        textBox1.AppendText(message + Environment.NewLine);
+                };
+
+                var sv = new SearchForVerifications(progress);
+                await Task.Run(() => sv.SearchAsync(measuringDevices));
+
+                //textBox1.AppendText($"({DateTime.Now}) Конец поиска.");
 
                 if (measuringDevices.Count > 0)
                     button2.Enabled = true;
-
             }
             catch (Exception ex)
             {
@@ -131,8 +141,8 @@ namespace WinForm
                     measuringDevices.Add(new MeasuringDevice()
                     {
                         RegistrationNumber = excelRange.Cells[i, 1].Value2.ToString(),
-                        Discharge = excelRange.Cells[i, 2].Value2.ToString(),
-                        Modification = excelRange.Cells[i, 3].Value2.ToString()
+                        StatePrimaryDenchmark = excelRange.Cells[i, 2].Value2.ToString(),
+                        Discharge = excelRange.Cells[i, 3].Value2.ToString()
                     });
                 }
 
@@ -207,7 +217,7 @@ namespace WinForm
             {
                 foreach (var device in measuringDevices)
                 {
-                    var relativeUri = $"fundmetrology/eapi/vri?mit_number=*{device.RegistrationNumber}*&mi_modification=*{device.Modification}*";
+                    var relativeUri = $"fundmetrology/eapi/vri?mit_number=*{device.RegistrationNumber}*&mi_modification=*{device.StatePrimaryDenchmark}*";
 
                     using (HttpResponseMessage response = await client.GetAsync(relativeUri))
                     {

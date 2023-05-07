@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace WinForm.Model
 {
-    internal class MeasuringDevice
+    public class MeasuringDevice
     {
         public string? RegistrationNumber { get; set; }
+        public string? StatePrimaryDenchmark { get; set; }
         public string? Discharge { get; set; }
-        public string? Modification { get; set; }
     }
 }
