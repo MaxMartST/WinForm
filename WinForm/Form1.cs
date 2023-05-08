@@ -18,7 +18,6 @@ namespace WinForm
 
             measuringDevices = new();
             itemsItems = new();
-
             client = new HttpClient();
         }
 
@@ -42,8 +41,6 @@ namespace WinForm
                 itemsItems.Clear();
 
                 ImportExcelFile();
-                //await GetVerificationResults();
-                //WriteListDataBox();
 
                 progressBar1.Show();
 
@@ -55,11 +52,11 @@ namespace WinForm
                 };
 
                 var sv = new SearchForVerifications(progress);
-                await Task.Run(() => sv.SearchAsync(measuringDevices));
-
-                //textBox1.AppendText($"({DateTime.Now}) Конец поиска.");
+                itemsItems = await Task.Run(() => sv.SearchAsync(measuringDevices));
+                //await GetVerificationResults();
 
                 progressBar1.Hide();
+
                 if (measuringDevices.Count > 0)
                     button2.Enabled = true;
             }
@@ -102,10 +99,10 @@ namespace WinForm
                 // Write data
                 int rows = itemsItems.Count;
 
-                worksheet.Cells[1, 1] = "Регистрационный номер типа СИ";
-                worksheet.Cells[1, 2] = "Наименование типа СИ";
-                worksheet.Cells[1, 3] = "Обозначение типа СИ";
-                worksheet.Cells[1, 4] = "Модицикация СИ";
+                worksheet.Cells[1, 1] = "Регистрационный номер типа";
+                worksheet.Cells[1, 2] = "Наименование типа";
+                worksheet.Cells[1, 3] = "Обозначение типа";
+                worksheet.Cells[1, 4] = "Модицикация";
                 worksheet.Cells[1, 5] = "Наименование организации-поверителя";
 
                 for (int a = 0, i = 2; a < rows; i++, a++)
@@ -155,20 +152,6 @@ namespace WinForm
             }
         }
 
-        private void WriteListDataBox()
-        {
-            foreach (ItemsItem item in itemsItems)
-            {
-                textBox1.Text += $"({DateTime.Now})" + Environment.NewLine;
-                textBox1.Text += $"Регистрационный номер типа СИ: {item.Mit_number}" + Environment.NewLine;
-                textBox1.Text += $"Наименование типа СИ: {item.Mit_title}" + Environment.NewLine;
-                textBox1.Text += $"Обозначение типа СИ: {item.Mit_notation}" + Environment.NewLine;
-                textBox1.Text += $"Модификация СИ: {item.Mi_modification}" + Environment.NewLine;
-                textBox1.Text += $"Наименование организации-поверителя: {item.Org_title}" + Environment.NewLine;
-                textBox1.Text += Environment.NewLine;
-            }
-        }
-
         private async Task<List<ItemsItem>> GetData()
         {
             try
@@ -206,7 +189,7 @@ namespace WinForm
             {
                 foreach (var device in measuringDevices)
                 {
-                    var relativeUri = $"fundmetrology/eapi/vri?mit_number=*{device.RegistrationNumber}*&mi_modification=*{device.StatePrimaryDenchmark}*";
+                    var relativeUri = $"fundmetrology/eapi/vri?mit_number=*{device.RegistrationNumber}*";
 
                     using (HttpResponseMessage response = await client.GetAsync(relativeUri))
                     {
