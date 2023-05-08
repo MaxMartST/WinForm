@@ -45,6 +45,8 @@ namespace WinForm
                 //await GetVerificationResults();
                 //WriteListDataBox();
 
+                progressBar1.Show();
+
                 var progress = new Progress<string>();
                 progress.ProgressChanged += (s, message) =>
                 {
@@ -57,6 +59,7 @@ namespace WinForm
 
                 //textBox1.AppendText($"({DateTime.Now}) Конец поиска.");
 
+                progressBar1.Hide();
                 if (measuringDevices.Count > 0)
                     button2.Enabled = true;
             }
@@ -152,20 +155,6 @@ namespace WinForm
             }
         }
 
-        //private void WriteListDataBox(List<ItemsItem> data)
-        //{
-        //    foreach (ItemsItem item in data)
-        //    {
-        //        textBox1.Text += $"({DateTime.Now})" + Environment.NewLine;
-        //        textBox1.Text += $"Регистрационный номер типа СИ: {item.Mit_number}" + Environment.NewLine;
-        //        textBox1.Text += $"Наименование типа СИ: {item.Mit_title}" + Environment.NewLine;
-        //        textBox1.Text += $"Обозначение типа СИ: {item.Mit_notation}" + Environment.NewLine;
-        //        textBox1.Text += $"Модификация СИ: {item.Mi_modification}" + Environment.NewLine;
-        //        textBox1.Text += $"Наименование организации-поверителя: {item.Org_title}" + Environment.NewLine;
-        //        textBox1.Text += Environment.NewLine;
-        //    }
-        //}
-
         private void WriteListDataBox()
         {
             foreach (ItemsItem item in itemsItems)
@@ -234,9 +223,64 @@ namespace WinForm
             }
         }
 
-        private void textBox1_TextChanged(object sender, EventArgs e)
+        void CheckInputBoxes()
         {
+            if (textBox2.Text != "" && textBox3.Text != "" && textBox4.Text != "")
+                button3.Enabled = true;
+            else
+                button3.Enabled = false;
+        }
 
+        private void textBox2_TextChanged(object sender, EventArgs e)
+        {
+            CheckInputBoxes();
+        }
+
+
+        private void textBox3_TextChanged(object sender, EventArgs e)
+        {
+            CheckInputBoxes();
+        }
+
+        private void textBox4_TextChanged(object sender, EventArgs e)
+        {
+            CheckInputBoxes();
+        }
+
+        private async void button3_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                textBox1.Clear();
+                measuringDevices.Clear();
+                progressBar1.Show();
+
+                measuringDevices.Add(new MeasuringDevice 
+                {
+                    RegistrationNumber = textBox2.Text,
+                    StatePrimaryDenchmark = textBox3.Text,
+                    Discharge = textBox4.Text
+                });
+
+                var progress = new Progress<string>();
+                progress.ProgressChanged += (s, message) =>
+                {
+                    if (!textBox1.IsDisposed)
+                        textBox1.AppendText(message + Environment.NewLine);
+                };
+
+                var sv = new SearchForVerifications(progress);
+                await Task.Run(() => sv.SearchAsync(measuringDevices));
+
+                progressBar1.Hide();
+
+                if (measuringDevices.Count > 0)
+                    button2.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
     }
 }

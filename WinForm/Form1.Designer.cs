@@ -42,15 +42,27 @@
             tabPage1 = new System.Windows.Forms.TabPage();
             label1 = new System.Windows.Forms.Label();
             tabPage2 = new System.Windows.Forms.TabPage();
+            flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            label2 = new System.Windows.Forms.Label();
+            textBox2 = new System.Windows.Forms.TextBox();
+            label3 = new System.Windows.Forms.Label();
+            textBox3 = new System.Windows.Forms.TextBox();
+            label4 = new System.Windows.Forms.Label();
+            textBox4 = new System.Windows.Forms.TextBox();
+            button3 = new System.Windows.Forms.Button();
+            progressBar1 = new System.Windows.Forms.ProgressBar();
             ((System.ComponentModel.ISupportInitialize)fileSystemWatcher1).BeginInit();
             groupBox1.SuspendLayout();
             groupBox2.SuspendLayout();
             tabControl1.SuspendLayout();
             tabPage1.SuspendLayout();
+            tabPage2.SuspendLayout();
+            flowLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
             // button1
             // 
+            button1.Cursor = System.Windows.Forms.Cursors.Hand;
             button1.Dock = System.Windows.Forms.DockStyle.Bottom;
             button1.Location = new System.Drawing.Point(3, 196);
             button1.Name = "button1";
@@ -74,6 +86,7 @@
             // 
             // button2
             // 
+            button2.Cursor = System.Windows.Forms.Cursors.Hand;
             button2.Enabled = false;
             button2.Location = new System.Drawing.Point(665, 398);
             button2.Name = "button2";
@@ -152,6 +165,8 @@
             // 
             // tabPage2
             // 
+            tabPage2.Controls.Add(flowLayoutPanel1);
+            tabPage2.Controls.Add(button3);
             tabPage2.Location = new System.Drawing.Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new System.Windows.Forms.Padding(3);
@@ -159,6 +174,98 @@
             tabPage2.TabIndex = 1;
             tabPage2.Text = "Параметры";
             tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // flowLayoutPanel1
+            // 
+            flowLayoutPanel1.Controls.Add(label2);
+            flowLayoutPanel1.Controls.Add(textBox2);
+            flowLayoutPanel1.Controls.Add(label3);
+            flowLayoutPanel1.Controls.Add(textBox3);
+            flowLayoutPanel1.Controls.Add(label4);
+            flowLayoutPanel1.Controls.Add(textBox4);
+            flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            flowLayoutPanel1.Location = new System.Drawing.Point(3, 3);
+            flowLayoutPanel1.Name = "flowLayoutPanel1";
+            flowLayoutPanel1.Size = new System.Drawing.Size(195, 193);
+            flowLayoutPanel1.TabIndex = 2;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new System.Drawing.Point(3, 0);
+            label2.Name = "label2";
+            label2.Size = new System.Drawing.Size(145, 15);
+            label2.TabIndex = 0;
+            label2.Text = "Регестрационный номер";
+            // 
+            // textBox2
+            // 
+            textBox2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            textBox2.Location = new System.Drawing.Point(3, 18);
+            textBox2.Name = "textBox2";
+            textBox2.Size = new System.Drawing.Size(145, 23);
+            textBox2.TabIndex = 1;
+            textBox2.TextChanged += textBox2_TextChanged;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new System.Drawing.Point(3, 44);
+            label3.Name = "label3";
+            label3.Size = new System.Drawing.Size(26, 15);
+            label3.TabIndex = 2;
+            label3.Text = "ГЭТ";
+            // 
+            // textBox3
+            // 
+            textBox3.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            textBox3.Location = new System.Drawing.Point(3, 62);
+            textBox3.Name = "textBox3";
+            textBox3.Size = new System.Drawing.Size(145, 23);
+            textBox3.TabIndex = 3;
+            textBox3.TextChanged += textBox3_TextChanged;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new System.Drawing.Point(3, 88);
+            label4.Name = "label4";
+            label4.Size = new System.Drawing.Size(44, 15);
+            label4.TabIndex = 4;
+            label4.Text = "Разряд";
+            // 
+            // textBox4
+            // 
+            textBox4.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            textBox4.Location = new System.Drawing.Point(3, 106);
+            textBox4.Name = "textBox4";
+            textBox4.Size = new System.Drawing.Size(145, 23);
+            textBox4.TabIndex = 5;
+            textBox4.TextChanged += textBox4_TextChanged;
+            // 
+            // button3
+            // 
+            button3.Cursor = System.Windows.Forms.Cursors.Hand;
+            button3.Dock = System.Windows.Forms.DockStyle.Bottom;
+            button3.Enabled = false;
+            button3.Location = new System.Drawing.Point(3, 196);
+            button3.Name = "button3";
+            button3.Size = new System.Drawing.Size(195, 40);
+            button3.TabIndex = 1;
+            button3.Text = "Поиск";
+            button3.UseVisualStyleBackColor = true;
+            button3.Click += button3_Click;
+            // 
+            // progressBar1
+            // 
+            progressBar1.Location = new System.Drawing.Point(12, 409);
+            progressBar1.MarqueeAnimationSpeed = 30;
+            progressBar1.Name = "progressBar1";
+            progressBar1.Size = new System.Drawing.Size(647, 19);
+            progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
+            progressBar1.TabIndex = 50;
+            progressBar1.Visible = false;
             // 
             // Form1
             // 
@@ -168,6 +275,7 @@
             BackgroundImage = Properties.Resources._1581_n1810423_big;
             BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             ClientSize = new System.Drawing.Size(800, 450);
+            Controls.Add(progressBar1);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Controls.Add(button2);
@@ -182,6 +290,9 @@
             groupBox2.ResumeLayout(false);
             tabControl1.ResumeLayout(false);
             tabPage1.ResumeLayout(false);
+            tabPage2.ResumeLayout(false);
+            flowLayoutPanel1.ResumeLayout(false);
+            flowLayoutPanel1.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -200,5 +311,14 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.ProgressBar progressBar1;
+        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TextBox textBox3;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox textBox4;
     }
 }
