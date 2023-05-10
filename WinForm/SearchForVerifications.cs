@@ -25,6 +25,15 @@ namespace WinForm
         public async Task<List<ItemsItem>> SearchAsync(List<MeasuringDevice> measuringDevices)
         {
             int countNode = measuringDevices.Count;
+
+            if (countNode == 0)
+            {
+                progress.Report($"({DateTime.Now}) Список пуст." + Environment.NewLine);
+
+                return new List<ItemsItem>();
+            }
+                
+
             List<ItemsItem> itemsItems = new List<ItemsItem>();
 
             progress.Report($"({DateTime.Now}) Начало поиска." + Environment.NewLine);

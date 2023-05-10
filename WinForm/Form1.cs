@@ -35,10 +35,13 @@ namespace WinForm
         {
             try
             {
+                if(button2.Enabled)
+                    button2.Enabled = false;
+
                 textBox1.Clear();
 
-                measuringDevices.Clear();
                 itemsItems.Clear();
+                measuringDevices.Clear();
 
                 ImportExcelFile();
 
@@ -53,11 +56,10 @@ namespace WinForm
 
                 var sv = new SearchForVerifications(progress);
                 itemsItems = await Task.Run(() => sv.SearchAsync(measuringDevices));
-                //await GetVerificationResults();
 
                 progressBar1.Hide();
 
-                if (measuringDevices.Count > 0)
+                if (itemsItems.Count > 0)
                     button2.Enabled = true;
             }
             catch (Exception ex)
@@ -78,6 +80,47 @@ namespace WinForm
             }
         }
 
+        private async void button3_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (button2.Enabled)
+                    button2.Enabled = false;
+
+                textBox1.Clear();
+
+                itemsItems.Clear();
+                measuringDevices.Clear();
+                measuringDevices.Add(new MeasuringDevice
+                {
+                    RegistrationNumber = textBox2.Text,
+                    StatePrimaryDenchmark = textBox3.Text,
+                    Discharge = textBox4.Text
+                });
+
+                progressBar1.Show();
+
+                var progress = new Progress<string>();
+                progress.ProgressChanged += (s, message) =>
+                {
+                    if (!textBox1.IsDisposed)
+                        textBox1.AppendText(message + Environment.NewLine);
+                };
+
+                var sv = new SearchForVerifications(progress);
+                itemsItems = await Task.Run(() => sv.SearchAsync(measuringDevices));
+
+                progressBar1.Hide();
+
+                if (itemsItems.Count > 0)
+                    button2.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
         private void ExportExcelFile()
         {
             saveFileDialog1.Filter = "Excel File|*.xlsx;*.xls";
@@ -89,6 +132,8 @@ namespace WinForm
 
             if (saveFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                textBox1.AppendText($"({DateTime.Now}) Экспорт файла начат." + Environment.NewLine);
+
                 object Nothing = System.Reflection.Missing.Value;
                 var app = new ExcelApp.Application();
                 app.Visible = false;
@@ -117,16 +162,20 @@ namespace WinForm
                 worksheet.SaveAs(saveFileDialog1.FileName, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, ExcelApp.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing);
                 workBook.Close(false, Type.Missing, Type.Missing);
                 app.Quit();
+
+                textBox1.AppendText($"({DateTime.Now}) Экспорт файла завершён." + Environment.NewLine);
             }
         }
 
         private void ImportExcelFile()
         {
             openFileDialog1.Title = "Import File";
-            openFileDialog1.Filter = "Import Excel File|*.xlsx;*.xls";
+            openFileDialog1.Filter = "Import Excel File|*.xlsx;*.xls";  
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                textBox1.AppendText($"({DateTime.Now}) Импорт файла начат." + Environment.NewLine);
+
                 //Create COM Objects.
                 ExcelApp.Application excelApp = new ExcelApp.Application();
                 ExcelApp.Workbook excelBook = excelApp.Workbooks.Open(openFileDialog1.FileName);
@@ -149,6 +198,8 @@ namespace WinForm
                 //after reading, relaase the excel project
                 excelApp.Quit();
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+
+                textBox1.AppendText($"({DateTime.Now}) Импорт файла завершён." + Environment.NewLine);
             }
         }
 
@@ -228,42 +279,6 @@ namespace WinForm
         private void textBox4_TextChanged(object sender, EventArgs e)
         {
             CheckInputBoxes();
-        }
-
-        private async void button3_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                textBox1.Clear();
-                measuringDevices.Clear();
-                progressBar1.Show();
-
-                measuringDevices.Add(new MeasuringDevice 
-                {
-                    RegistrationNumber = textBox2.Text,
-                    StatePrimaryDenchmark = textBox3.Text,
-                    Discharge = textBox4.Text
-                });
-
-                var progress = new Progress<string>();
-                progress.ProgressChanged += (s, message) =>
-                {
-                    if (!textBox1.IsDisposed)
-                        textBox1.AppendText(message + Environment.NewLine);
-                };
-
-                var sv = new SearchForVerifications(progress);
-                await Task.Run(() => sv.SearchAsync(measuringDevices));
-
-                progressBar1.Hide();
-
-                if (measuringDevices.Count > 0)
-                    button2.Enabled = true;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
         }
     }
 }
