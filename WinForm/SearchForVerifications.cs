@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using WinForm.Model;
 
 namespace WinForm
@@ -36,7 +37,7 @@ namespace WinForm
 
             List<ItemsItem> itemsItems = new List<ItemsItem>();
 
-            progress.Report($"({DateTime.Now}) Начало поиска." + Environment.NewLine);
+            progress.Report($"({DateTime.Now}) Начало поиска.");
 
             client.BaseAddress = new Uri(baseUri);
             client.DefaultRequestHeaders.Add("User-Agent", "C# console program");
@@ -45,44 +46,65 @@ namespace WinForm
             for (int i = 0; i < countNode; i++)
             {
                 // Обращение к API
-                Thread.Sleep(2000);
+                //Thread.Sleep(2000);
 
-                var item = await GetDataAsync(measuringDevices[i]);
-                itemsItems.AddRange(item);
+                try
+                {
+                    var item = await GetDataAsync(measuringDevices[i]);
+                    itemsItems.AddRange(item);
+                }
+                catch (Exception ex)
+                {
+                    progress.Report($"({DateTime.Now}) Ошибка: {ex.Message}" + Environment.NewLine);
+                    throw;
+                }
 
                 var info = $"({DateTime.Now}) Получаны данные ({i + 1}/{countNode})." + Environment.NewLine;
 
-                info += $"Регестрационный номер: {measuringDevices[i].RegistrationNumber}" + Environment.NewLine
-                    + $"ГЭТ: {measuringDevices[i].StatePrimaryDenchmark}" + Environment.NewLine
-                    + $"Разряд: {measuringDevices[i].Discharge}" + Environment.NewLine;
+                info += $"\tРегестрационный номер: {measuringDevices[i].RegistrationNumber}" + Environment.NewLine
+                    + $"\tГЭТ: {measuringDevices[i].StatePrimaryDenchmark}" + Environment.NewLine
+                    + $"\tРазряд: {measuringDevices[i].Discharge}";
 
                 progress.Report($"{info}");
             }
 
-            progress.Report($"({DateTime.Now}) Конец поиска." + Environment.NewLine);
+            progress.Report($"({DateTime.Now}) Конец поиска.");
 
             return itemsItems;
         }
 
         private async Task<List<ItemsItem>> GetDataAsync(MeasuringDevice measuringDevice)
         {
-            try
-            {
-                var relativeUri = $"fundmetrology/eapi/vri?mit_number=*{measuringDevice.RegistrationNumber}*";
+            List<ItemsItem> items = new List<ItemsItem>();
+            const int rows = 100;
+            int index = 0, start = 0;
+            decimal numberRequests = 0;
 
-                using (HttpResponseMessage response = await client.GetAsync(relativeUri))
-                {
-                    response.EnsureSuccessStatusCode();
-                    var resp = await response.Content.ReadAsStringAsync();
-                    Root root = JsonConvert.DeserializeObject<Root>(resp);
-
-                    return root.Result.Items;
-                }
-            }
-            catch (Exception)
+            do
             {
-                throw;
-            }
+                Thread.Sleep(2000);
+                var relativeUri = $"fundmetrology/eapi/vri?start={start}&rows={rows}&mit_number=*{measuringDevice.RegistrationNumber}*";
+                
+                using HttpResponseMessage response = await client.GetAsync(relativeUri);
+
+                response.EnsureSuccessStatusCode();
+                var resp = await response.Content.ReadAsStringAsync();
+                Root root = JsonConvert.DeserializeObject<Root>(resp);
+
+                if (root.Result.Count == 0)
+                    throw new Exception($"Нет результатов для: {measuringDevice.RegistrationNumber}");
+
+                if (start == 0)
+                    numberRequests = Math.Ceiling((decimal)root.Result.Count / root.Result.Rows);
+
+                items.AddRange(root.Result.Items);
+
+                start += rows;
+                index++;
+
+            } while (index < numberRequests);
+
+            return items;
         }
     }
 }

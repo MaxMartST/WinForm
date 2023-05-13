@@ -80,7 +80,7 @@ namespace WinForm
             }
         }
 
-        private async void button3_Click(object sender, EventArgs e)
+        private async void searchButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -93,9 +93,9 @@ namespace WinForm
                 measuringDevices.Clear();
                 measuringDevices.Add(new MeasuringDevice
                 {
-                    RegistrationNumber = textBox2.Text,
-                    StatePrimaryDenchmark = textBox3.Text,
-                    Discharge = textBox4.Text
+                    RegistrationNumber = registrationNumberBox.Text,
+                    StatePrimaryDenchmark = statePrimaryDenchmarkBox.Text,
+                    Discharge = dischargeBox.Text
                 });
 
                 progressBar1.Show();
@@ -259,24 +259,23 @@ namespace WinForm
 
         void CheckInputBoxes()
         {
-            if (textBox2.Text != "" && textBox3.Text != "" && textBox4.Text != "")
-                button3.Enabled = true;
+            if (registrationNumberBox.Text != "")
+                searchButton.Enabled = true;
             else
-                button3.Enabled = false;
+                searchButton.Enabled = false;
         }
 
-        private void textBox2_TextChanged(object sender, EventArgs e)
+        private void registrationNumberBox_TextChanged(object sender, EventArgs e)
         {
             CheckInputBoxes();
         }
 
-
-        private void textBox3_TextChanged(object sender, EventArgs e)
+        private void statePrimaryDenchmarkBox_TextChanged(object sender, EventArgs e)
         {
             CheckInputBoxes();
         }
 
-        private void textBox4_TextChanged(object sender, EventArgs e)
+        private void dischargeBox_TextChanged(object sender, EventArgs e)
         {
             CheckInputBoxes();
         }
