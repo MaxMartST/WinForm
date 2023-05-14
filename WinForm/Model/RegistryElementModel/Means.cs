@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WinForm.Model
+namespace WinForm.Model.RegistryElementModel
 {
-    internal class Root
+    public class Means
     {
-        public Result Result { get; set; }
+        public List<Mietum> mieta { get; set; }
     }
 }

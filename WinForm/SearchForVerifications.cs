@@ -23,7 +23,7 @@ namespace WinForm
             client = new HttpClient();
         }
 
-        public async Task<List<ItemsItem>> SearchAsync(List<MeasuringDevice> measuringDevices)
+        public async Task<List<ResultDataModel>> SearchAsync(List<MeasuringDevice> measuringDevices)
         {
             int countNode = measuringDevices.Count;
 
@@ -31,11 +31,12 @@ namespace WinForm
             {
                 progress.Report($"({DateTime.Now}) Список пуст." + Environment.NewLine);
 
-                return new List<ItemsItem>();
+                //return new List<ItemsItem>();
+                return new List<ResultDataModel>();
             }
                 
-
-            List<ItemsItem> itemsItems = new List<ItemsItem>();
+            //List<ItemsItem> itemsItems = new List<ItemsItem>();
+            List<ResultDataModel> resultDataModels = new List<ResultDataModel>();
 
             progress.Report($"({DateTime.Now}) Начало поиска.");
 
@@ -50,8 +51,11 @@ namespace WinForm
 
                 try
                 {
-                    var item = await GetDataAsync(measuringDevices[i]);
-                    itemsItems.AddRange(item);
+                    //var item = await GetDataAsync(measuringDevices[i]);
+                    //itemsItems.AddRange(item);
+
+                    var results = await GetDataAsync(measuringDevices[i]);
+                    resultDataModels.AddRange(results);
                 }
                 catch (Exception ex)
                 {
@@ -70,12 +74,14 @@ namespace WinForm
 
             progress.Report($"({DateTime.Now}) Конец поиска.");
 
-            return itemsItems;
+            //return itemsItems;
+            return resultDataModels;
         }
 
-        private async Task<List<ItemsItem>> GetDataAsync(MeasuringDevice measuringDevice)
+        private async Task<List<ResultDataModel>> GetDataAsync(MeasuringDevice measuringDevice)
         {
-            List<ItemsItem> items = new List<ItemsItem>();
+            //List<ItemsItem> items = new List<ItemsItem>();
+            List<ResultDataModel> resultDataModels = new List<ResultDataModel>();
             const int rows = 100;
             int index = 0, start = 0;
             decimal numberRequests = 0;
@@ -89,7 +95,7 @@ namespace WinForm
 
                 response.EnsureSuccessStatusCode();
                 var resp = await response.Content.ReadAsStringAsync();
-                Root root = JsonConvert.DeserializeObject<Root>(resp);
+                Model.VerificationResultModel.Root root = JsonConvert.DeserializeObject<Model.VerificationResultModel.Root>(resp);
 
                 if (root.Result.Count == 0)
                     throw new Exception($"Нет результатов для: {measuringDevice.RegistrationNumber}");
@@ -97,14 +103,45 @@ namespace WinForm
                 if (start == 0)
                     numberRequests = Math.Ceiling((decimal)root.Result.Count / root.Result.Rows);
 
-                items.AddRange(root.Result.Items);
+                foreach (var item in root.Result.Items)
+                {
+                    var resultDataModel = new ResultDataModel()
+                    {
+                        Mit_notation = item.Mit_notation,
+                        Mit_number = item.Mit_number,   
+                        Mit_title = item.Mit_title, 
+                        Mi_modification = item.Mi_modification,
+                        Mi_number = item.Mi_number, 
+                        Org_title = item.Org_title
+                    };
+
+                    resultDataModel.signCipher = await GetRegistryElementModelAsync(item.Vri_id);
+                    resultDataModels.Add(resultDataModel);
+                }
+
+                //items.AddRange(root.Result.Items);
 
                 start += rows;
                 index++;
 
             } while (index < numberRequests);
 
-            return items;
+            return resultDataModels;
+        }
+
+        private async Task<string> GetRegistryElementModelAsync(string vri_id)
+        {
+            Thread.Sleep(2000);
+            var relativeUri = $"fundmetrology/eapi/vri/{vri_id}";
+
+            using HttpResponseMessage response = await client.GetAsync(relativeUri);
+
+            response.EnsureSuccessStatusCode();
+            var resp = await response.Content.ReadAsStringAsync();
+
+            Model.RegistryElementModel.Root root = JsonConvert.DeserializeObject<Model.RegistryElementModel.Root>(resp);
+
+            return root.Result.vriInfo.signCipher;    
         }
     }
 }

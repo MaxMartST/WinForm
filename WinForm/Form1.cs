@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForm.Model;
+using WinForm.Model.VerificationResultModel;
 using ExcelApp = Microsoft.Office.Interop.Excel;
 
 namespace WinForm
@@ -17,13 +18,18 @@ namespace WinForm
             InitializeComponent();
 
             measuringDevices = new();
+            resultDataModels = new();
             itemsItems = new();
+
             client = new HttpClient();
         }
 
         const string baseUri = "https://fgis.gost.ru";
+
         private List<MeasuringDevice> measuringDevices;
+        private List<ResultDataModel> resultDataModels;
         private List<ItemsItem> itemsItems;
+
         static HttpClient? client;
 
         private void Form1_Load(object sender, EventArgs e)
@@ -40,7 +46,8 @@ namespace WinForm
 
                 textBox1.Clear();
 
-                itemsItems.Clear();
+                //itemsItems.Clear();
+                resultDataModels.Clear();
                 measuringDevices.Clear();
 
                 ImportExcelFile();
@@ -55,11 +62,15 @@ namespace WinForm
                 };
 
                 var sv = new SearchForVerifications(progress);
-                itemsItems = await Task.Run(() => sv.SearchAsync(measuringDevices));
+                //itemsItems = await Task.Run(() => sv.SearchAsync(measuringDevices));
+                resultDataModels = await Task.Run(() => sv.SearchAsync(measuringDevices));
 
                 progressBar1.Hide();
 
-                if (itemsItems.Count > 0)
+                //if (itemsItems.Count > 0)
+                //    button2.Enabled = true;
+
+                if (resultDataModels.Count > 0)
                     button2.Enabled = true;
             }
             catch (Exception ex)
@@ -89,8 +100,10 @@ namespace WinForm
 
                 textBox1.Clear();
 
-                itemsItems.Clear();
+                //itemsItems.Clear();
+                resultDataModels.Clear();
                 measuringDevices.Clear();
+
                 measuringDevices.Add(new MeasuringDevice
                 {
                     RegistrationNumber = registrationNumberBox.Text,
@@ -108,11 +121,15 @@ namespace WinForm
                 };
 
                 var sv = new SearchForVerifications(progress);
-                itemsItems = await Task.Run(() => sv.SearchAsync(measuringDevices));
+                //itemsItems = await Task.Run(() => sv.SearchAsync(measuringDevices));
+                resultDataModels = await Task.Run(() => sv.SearchAsync(measuringDevices));
 
                 progressBar1.Hide();
 
-                if (itemsItems.Count > 0)
+                //if (itemsItems.Count > 0)
+                //    button2.Enabled = true;
+
+                if (resultDataModels.Count > 0)
                     button2.Enabled = true;
             }
             catch (Exception ex)
@@ -142,21 +159,33 @@ namespace WinForm
                 worksheet.Name = "WorkSheet";
 
                 // Write data
-                int rows = itemsItems.Count;
+                //int rows = itemsItems.Count;
+                int rows = resultDataModels.Count;
 
                 worksheet.Cells[1, 1] = "Регистрационный номер типа";
                 worksheet.Cells[1, 2] = "Наименование типа";
                 worksheet.Cells[1, 3] = "Обозначение типа";
                 worksheet.Cells[1, 4] = "Модицикация";
-                worksheet.Cells[1, 5] = "Наименование организации-поверителя";
+                worksheet.Cells[1, 5] = "Заводской серийный номер";
+                worksheet.Cells[1, 6] = "Шифр клейма";
+                worksheet.Cells[1, 7] = "Наименование организации-поверителя";
 
                 for (int a = 0, i = 2; a < rows; i++, a++)
                 {
-                    worksheet.Cells[i, 1] = itemsItems[a].Mit_number;
-                    worksheet.Cells[i, 2] = itemsItems[a].Mit_title;
-                    worksheet.Cells[i, 3] = itemsItems[a].Mit_notation;
-                    worksheet.Cells[i, 4] = itemsItems[a].Mi_modification;
-                    worksheet.Cells[i, 5] = itemsItems[a].Org_title;
+                    //worksheet.Cells[i, 1] = itemsItems[a].Mit_number;
+                    //worksheet.Cells[i, 2] = itemsItems[a].Mit_title;
+                    //worksheet.Cells[i, 3] = itemsItems[a].Mit_notation;
+                    //worksheet.Cells[i, 4] = itemsItems[a].Mi_modification;
+                    //worksheet.Cells[i, 5] = itemsItems[a].Mi_number;
+                    //worksheet.Cells[i, 6] = itemsItems[a].Org_title;
+
+                    worksheet.Cells[i, 1] = resultDataModels[a].Mit_number;
+                    worksheet.Cells[i, 2] = resultDataModels[a].Mit_title;
+                    worksheet.Cells[i, 3] = resultDataModels[a].Mit_notation;
+                    worksheet.Cells[i, 4] = resultDataModels[a].Mi_modification;
+                    worksheet.Cells[i, 5] = resultDataModels[a].Mi_number;
+                    worksheet.Cells[i, 6] = resultDataModels[a].signCipher;
+                    worksheet.Cells[i, 7] = resultDataModels[a].Org_title;
                 }
 
                 worksheet.SaveAs(saveFileDialog1.FileName, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, ExcelApp.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing);

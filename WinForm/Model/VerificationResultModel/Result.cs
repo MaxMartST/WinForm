@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WinForm.Model
+namespace WinForm.Model.VerificationResultModel
 {
     internal class Result
     {
