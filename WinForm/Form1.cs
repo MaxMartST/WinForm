@@ -169,16 +169,10 @@ namespace WinForm
                 worksheet.Cells[1, 5] = "Заводской серийный номер";
                 worksheet.Cells[1, 6] = "Шифр клейма";
                 worksheet.Cells[1, 7] = "Наименование организации-поверителя";
+                worksheet.Cells[1, 8] = "ИНН";
 
                 for (int a = 0, i = 2; a < rows; i++, a++)
                 {
-                    //worksheet.Cells[i, 1] = itemsItems[a].Mit_number;
-                    //worksheet.Cells[i, 2] = itemsItems[a].Mit_title;
-                    //worksheet.Cells[i, 3] = itemsItems[a].Mit_notation;
-                    //worksheet.Cells[i, 4] = itemsItems[a].Mi_modification;
-                    //worksheet.Cells[i, 5] = itemsItems[a].Mi_number;
-                    //worksheet.Cells[i, 6] = itemsItems[a].Org_title;
-
                     worksheet.Cells[i, 1] = resultDataModels[a].Mit_number;
                     worksheet.Cells[i, 2] = resultDataModels[a].Mit_title;
                     worksheet.Cells[i, 3] = resultDataModels[a].Mit_notation;
@@ -186,6 +180,7 @@ namespace WinForm
                     worksheet.Cells[i, 5] = resultDataModels[a].Mi_number;
                     worksheet.Cells[i, 6] = resultDataModels[a].signCipher;
                     worksheet.Cells[i, 7] = resultDataModels[a].Org_title;
+                    worksheet.Cells[i, 8] = resultDataModels[a].Inn;
                 }
 
                 worksheet.SaveAs(saveFileDialog1.FileName, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, ExcelApp.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing);

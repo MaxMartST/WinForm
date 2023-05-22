@@ -15,5 +15,6 @@ namespace WinForm.Model
         public string Mi_number { get; set; }
         public string Org_title { get; set; }
         public string signCipher { get; set; }
+        public string Inn { get; set; }
     }
 }
