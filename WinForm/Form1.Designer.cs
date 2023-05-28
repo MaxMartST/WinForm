@@ -29,13 +29,13 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            button1 = new System.Windows.Forms.Button();
+            searchByParametersFromFileButton = new System.Windows.Forms.Button();
             openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             splitter1 = new System.Windows.Forms.Splitter();
             button2 = new System.Windows.Forms.Button();
             saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             fileSystemWatcher1 = new System.IO.FileSystemWatcher();
-            textBox1 = new System.Windows.Forms.TextBox();
+            informationTextBox = new System.Windows.Forms.TextBox();
             groupBox1 = new System.Windows.Forms.GroupBox();
             groupBox2 = new System.Windows.Forms.GroupBox();
             tabControl1 = new System.Windows.Forms.TabControl();
@@ -44,12 +44,10 @@
             tabPage2 = new System.Windows.Forms.TabPage();
             flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             label2 = new System.Windows.Forms.Label();
-            registrationNumberBox = new System.Windows.Forms.TextBox();
-            label3 = new System.Windows.Forms.Label();
-            statePrimaryDenchmarkBox = new System.Windows.Forms.TextBox();
-            label4 = new System.Windows.Forms.Label();
-            dischargeBox = new System.Windows.Forms.TextBox();
-            searchButton = new System.Windows.Forms.Button();
+            registrationNumberTextBox = new System.Windows.Forms.TextBox();
+            label5 = new System.Windows.Forms.Label();
+            YearVerificationTextBox = new System.Windows.Forms.TextBox();
+            searchButtonByForm = new System.Windows.Forms.Button();
             progressBar1 = new System.Windows.Forms.ProgressBar();
             ((System.ComponentModel.ISupportInitialize)fileSystemWatcher1).BeginInit();
             groupBox1.SuspendLayout();
@@ -60,17 +58,17 @@
             flowLayoutPanel1.SuspendLayout();
             SuspendLayout();
             // 
-            // button1
+            // searchByParametersFromFileButton
             // 
-            button1.Cursor = System.Windows.Forms.Cursors.Hand;
-            button1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            button1.Location = new System.Drawing.Point(3, 196);
-            button1.Name = "button1";
-            button1.Size = new System.Drawing.Size(195, 40);
-            button1.TabIndex = 0;
-            button1.Text = "Загрузить";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
+            searchByParametersFromFileButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            searchByParametersFromFileButton.Dock = System.Windows.Forms.DockStyle.Bottom;
+            searchByParametersFromFileButton.Location = new System.Drawing.Point(3, 196);
+            searchByParametersFromFileButton.Name = "searchByParametersFromFileButton";
+            searchByParametersFromFileButton.Size = new System.Drawing.Size(195, 40);
+            searchByParametersFromFileButton.TabIndex = 0;
+            searchByParametersFromFileButton.Text = "Загрузить";
+            searchByParametersFromFileButton.UseVisualStyleBackColor = true;
+            searchByParametersFromFileButton.Click += searchByParametersFromFileButton_Click;
             // 
             // openFileDialog1
             // 
@@ -101,19 +99,19 @@
             fileSystemWatcher1.EnableRaisingEvents = true;
             fileSystemWatcher1.SynchronizingObject = this;
             // 
-            // textBox1
+            // informationTextBox
             // 
-            textBox1.Dock = System.Windows.Forms.DockStyle.Fill;
-            textBox1.Location = new System.Drawing.Point(3, 19);
-            textBox1.Multiline = true;
-            textBox1.Name = "textBox1";
-            textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            textBox1.Size = new System.Drawing.Size(549, 267);
-            textBox1.TabIndex = 4;
+            informationTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            informationTextBox.Location = new System.Drawing.Point(3, 19);
+            informationTextBox.Multiline = true;
+            informationTextBox.Name = "informationTextBox";
+            informationTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            informationTextBox.Size = new System.Drawing.Size(549, 267);
+            informationTextBox.TabIndex = 4;
             // 
             // groupBox1
             // 
-            groupBox1.Controls.Add(textBox1);
+            groupBox1.Controls.Add(informationTextBox);
             groupBox1.Location = new System.Drawing.Point(233, 15);
             groupBox1.Name = "groupBox1";
             groupBox1.Size = new System.Drawing.Size(555, 289);
@@ -145,7 +143,7 @@
             // tabPage1
             // 
             tabPage1.Controls.Add(label1);
-            tabPage1.Controls.Add(button1);
+            tabPage1.Controls.Add(searchByParametersFromFileButton);
             tabPage1.Location = new System.Drawing.Point(4, 24);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new System.Windows.Forms.Padding(3);
@@ -166,7 +164,7 @@
             // tabPage2
             // 
             tabPage2.Controls.Add(flowLayoutPanel1);
-            tabPage2.Controls.Add(searchButton);
+            tabPage2.Controls.Add(searchButtonByForm);
             tabPage2.Location = new System.Drawing.Point(4, 24);
             tabPage2.Name = "tabPage2";
             tabPage2.Padding = new System.Windows.Forms.Padding(3);
@@ -178,17 +176,16 @@
             // flowLayoutPanel1
             // 
             flowLayoutPanel1.Controls.Add(label2);
-            flowLayoutPanel1.Controls.Add(registrationNumberBox);
-            flowLayoutPanel1.Controls.Add(label3);
-            flowLayoutPanel1.Controls.Add(statePrimaryDenchmarkBox);
-            flowLayoutPanel1.Controls.Add(label4);
-            flowLayoutPanel1.Controls.Add(dischargeBox);
+            flowLayoutPanel1.Controls.Add(registrationNumberTextBox);
+            flowLayoutPanel1.Controls.Add(label5);
+            flowLayoutPanel1.Controls.Add(YearVerificationTextBox);
             flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             flowLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
             flowLayoutPanel1.Size = new System.Drawing.Size(195, 193);
             flowLayoutPanel1.TabIndex = 2;
+            flowLayoutPanel1.Paint += flowLayoutPanel1_Paint;
             // 
             // label2
             // 
@@ -199,63 +196,43 @@
             label2.TabIndex = 0;
             label2.Text = "Регестрационный номер";
             // 
-            // registrationNumberBox
+            // registrationNumberTextBox
             // 
-            registrationNumberBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            registrationNumberBox.Location = new System.Drawing.Point(3, 18);
-            registrationNumberBox.Name = "registrationNumberBox";
-            registrationNumberBox.Size = new System.Drawing.Size(145, 23);
-            registrationNumberBox.TabIndex = 1;
-            registrationNumberBox.TextChanged += registrationNumberBox_TextChanged;
+            registrationNumberTextBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            registrationNumberTextBox.Location = new System.Drawing.Point(3, 18);
+            registrationNumberTextBox.Name = "registrationNumberTextBox";
+            registrationNumberTextBox.Size = new System.Drawing.Size(200, 23);
+            registrationNumberTextBox.TabIndex = 1;
+            registrationNumberTextBox.TextChanged += registrationNumberBox_TextChanged;
             // 
-            // label3
+            // label5
             // 
-            label3.AutoSize = true;
-            label3.Location = new System.Drawing.Point(3, 44);
-            label3.Name = "label3";
-            label3.Size = new System.Drawing.Size(26, 15);
-            label3.TabIndex = 2;
-            label3.Text = "ГЭТ";
+            label5.AutoSize = true;
+            label5.Location = new System.Drawing.Point(3, 44);
+            label5.Name = "label5";
+            label5.Size = new System.Drawing.Size(75, 15);
+            label5.TabIndex = 7;
+            label5.Text = "Год поверки";
             // 
-            // statePrimaryDenchmarkBox
+            // YearVerificationTextBox
             // 
-            statePrimaryDenchmarkBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            statePrimaryDenchmarkBox.Location = new System.Drawing.Point(3, 62);
-            statePrimaryDenchmarkBox.Name = "statePrimaryDenchmarkBox";
-            statePrimaryDenchmarkBox.Size = new System.Drawing.Size(145, 23);
-            statePrimaryDenchmarkBox.TabIndex = 3;
-            statePrimaryDenchmarkBox.TextChanged += statePrimaryDenchmarkBox_TextChanged;
+            YearVerificationTextBox.Location = new System.Drawing.Point(3, 62);
+            YearVerificationTextBox.Name = "YearVerificationTextBox";
+            YearVerificationTextBox.Size = new System.Drawing.Size(200, 23);
+            YearVerificationTextBox.TabIndex = 51;
             // 
-            // label4
+            // searchButtonByForm
             // 
-            label4.AutoSize = true;
-            label4.Location = new System.Drawing.Point(3, 88);
-            label4.Name = "label4";
-            label4.Size = new System.Drawing.Size(44, 15);
-            label4.TabIndex = 4;
-            label4.Text = "Разряд";
-            // 
-            // dischargeBox
-            // 
-            dischargeBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            dischargeBox.Location = new System.Drawing.Point(3, 106);
-            dischargeBox.Name = "dischargeBox";
-            dischargeBox.Size = new System.Drawing.Size(145, 23);
-            dischargeBox.TabIndex = 5;
-            dischargeBox.TextChanged += dischargeBox_TextChanged;
-            // 
-            // searchButton
-            // 
-            searchButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            searchButton.Dock = System.Windows.Forms.DockStyle.Bottom;
-            searchButton.Enabled = false;
-            searchButton.Location = new System.Drawing.Point(3, 196);
-            searchButton.Name = "searchButton";
-            searchButton.Size = new System.Drawing.Size(195, 40);
-            searchButton.TabIndex = 1;
-            searchButton.Text = "Поиск";
-            searchButton.UseVisualStyleBackColor = true;
-            searchButton.Click += searchButton_Click;
+            searchButtonByForm.Cursor = System.Windows.Forms.Cursors.Hand;
+            searchButtonByForm.Dock = System.Windows.Forms.DockStyle.Bottom;
+            searchButtonByForm.Enabled = false;
+            searchButtonByForm.Location = new System.Drawing.Point(3, 196);
+            searchButtonByForm.Name = "searchButtonByForm";
+            searchButtonByForm.Size = new System.Drawing.Size(195, 40);
+            searchButtonByForm.TabIndex = 1;
+            searchButtonByForm.Text = "Поиск";
+            searchButtonByForm.UseVisualStyleBackColor = true;
+            searchButtonByForm.Click += searchButtonByForm_Click;
             // 
             // progressBar1
             // 
@@ -298,13 +275,13 @@
 
         #endregion
 
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button searchByParametersFromFileButton;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.Splitter splitter1;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.SaveFileDialog saveFileDialog1;
         private System.IO.FileSystemWatcher fileSystemWatcher1;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox informationTextBox;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
@@ -312,13 +289,11 @@
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.ProgressBar progressBar1;
-        private System.Windows.Forms.Button searchButton;
+        private System.Windows.Forms.Button searchButtonByForm;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TextBox registrationNumberBox;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox statePrimaryDenchmarkBox;
-        private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.TextBox dischargeBox;
+        private System.Windows.Forms.TextBox registrationNumberTextBox;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.TextBox YearVerificationTextBox;
     }
 }

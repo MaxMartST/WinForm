@@ -8,6 +8,7 @@ namespace WinForm.Model.RegistryElementModel
 {
     public class Means
     {
-        public List<Mietum> mieta { get; set; }
+        public List<MietaItem> mieta { get; set; }
+        public List<MisItem> mis { get; set; }
     }
 }

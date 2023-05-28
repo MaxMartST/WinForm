@@ -9,5 +9,6 @@ namespace WinForm.Model.RegistryElementModel
     public class MiInfo
     {
         public SingleMI singleMI { get; set; }
+        public EtaMI etaMI { get; set; }
     }
 }

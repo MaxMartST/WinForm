@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace WinForm.Model.RegistryElementModel
 {
-    public class MietaItem
+    public class EtaMI
     {
         public string regNumber { get; set; }
-        public string mietaURL { get; set; }
         public string mitypeNumber { get; set; }
         public string mitypeURL { get; set; }
         public string mitypeTitle { get; set; }

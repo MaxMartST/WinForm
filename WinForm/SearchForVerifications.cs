@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Win32;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -11,19 +12,21 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForm.ExceptionServise;
 using WinForm.Model;
+using WinForm.Model.RegistryElementModel;
 
 namespace WinForm
 {
     public class SearchForVerifications
     {
         const string baseUri = "https://fgis.gost.ru";
+        public List<ResultDataModel> resultDataModels { get; set; }
         private readonly IProgress<string> progress;
         static HttpClient? client;
 
         public SearchForVerifications(IProgress<string> progress)
         {
             this.progress = progress;
-
+            this.resultDataModels = new List<ResultDataModel>();
             var httpClientHandler = new HttpClientHandler
             {
                 Proxy = new WebProxy
@@ -41,35 +44,35 @@ namespace WinForm
 
             httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
-            client = new HttpClient(handler: httpClientHandler, disposeHandler: true);
-            //client = new HttpClient();
-        }
-
-        public async Task<List<ResultDataModel>> SearchAsync(List<MeasuringDevice> measuringDevices)
-        {
-            int countNode = measuringDevices.Count;
-
-            if (countNode == 0)
-            {
-                progress.Report($"({DateTime.Now}) Список пуст." + Environment.NewLine);
-                return new List<ResultDataModel>();
-            }
-                
-            List<ResultDataModel> resultDataModels = new List<ResultDataModel>();
-
-            progress.Report($"({DateTime.Now}) Начало поиска.");
-
+            //client = new HttpClient(handler: httpClientHandler, disposeHandler: true);
+            client = new HttpClient();
             client.BaseAddress = new Uri(baseUri);
             client.DefaultRequestHeaders.Add("User-Agent", "C# console program");
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
+
+        public async Task GetRegistryItem(string vri_id)
+        { 
+        
+        }
+
+        public async Task SearchByParametersFromFileAsync(List<MeasuringDevice> measuringDevices)
+        {
+            int countNode = measuringDevices.Count;   
+            //List<ResultDataModel> resultDataModels = new List<ResultDataModel>();
+
+            progress.Report($"({DateTime.Now}) Начало поиска.");
 
             for (int i = 0; i < countNode; i++)
             {
+                progress.Report($"({DateTime.Now}) Поиск поверок по регистрационному номеру \"{measuringDevices[i].RegistrationNumber}\"");
+                var attributeLine = $"&mit_number=*{measuringDevices[i].RegistrationNumber}*";
                 // Обращение к API
                 try
                 {
-                    var results = await GetDataAsync(measuringDevices[i]);
-                    resultDataModels.AddRange(results);
+                    await GetDataAsync(attributeLine);
+                    //var results = await GetDataAsync(attributeLine);
+                    //resultDataModels.AddRange(results);
                 }
                 catch (Exception ex)
                 {
@@ -86,14 +89,42 @@ namespace WinForm
                 progress.Report($"{info}");
             }
 
-            progress.Report($"({DateTime.Now}) Конец поиска.");
+            if (countNode == 0)
+                progress.Report($"({DateTime.Now}) Входной список пуст.");
 
-            return resultDataModels;
+            progress.Report($"({DateTime.Now}) Конец поиска.");
         }
 
-        private async Task<List<ResultDataModel>> GetDataAsync(MeasuringDevice measuringDevice)
+        public async Task SearchByFormAsync(SearchParameters searchParameters)
         {
-            List<ResultDataModel> resultDataModels = new List<ResultDataModel>();
+            var attributeLine = $"&mit_number=*{searchParameters.RegistrationNumber}*";
+
+            if (searchParameters.YearVerification != null)
+                attributeLine += $"&year={searchParameters.YearVerification}";
+  
+            progress.Report($"({DateTime.Now}) Начало поиска.");
+            progress.Report($"({DateTime.Now}) Поиск поверок по регистрационному номеру \"{searchParameters.RegistrationNumber}\"");
+
+            try
+            {
+                await GetDataAsync(attributeLine);
+            }
+            catch (Exception ex)
+            {
+                progress.Report($"({DateTime.Now}) Ошибка: {ex.Message}" + Environment.NewLine);
+                throw;
+            }
+
+            var info = $"({DateTime.Now}) Получаны данные" + Environment.NewLine;
+            info += $"\tРегистрационный номер: {searchParameters.RegistrationNumber}" + Environment.NewLine
+                + $"\tГод поверки: {(searchParameters.YearVerification == null ? null : searchParameters.YearVerification)}" + Environment.NewLine;
+
+            progress.Report($"{info}");
+            progress.Report($"({DateTime.Now}) Конец поиска.");
+        }
+
+        private async Task GetDataAsync(string attributeLine)
+        {
             var signCipherInn = new Dictionary<string, string>();
 
             const int rows = 100;
@@ -103,8 +134,7 @@ namespace WinForm
             do
             {
                 //Thread.Sleep(2000);
-                var relativeUri = $"fundmetrology/eapi/vri?start={start}&rows={rows}&mit_number=*{measuringDevice.RegistrationNumber}*"; 
-                progress.Report($"({DateTime.Now}) Поиск поверок по регистрационному номеру \"{measuringDevice.RegistrationNumber}\"");
+                var relativeUri = $"fundmetrology/eapi/vri?start={start}&rows={rows}" + attributeLine; 
 
                 using HttpResponseMessage response = await client.GetAsync(relativeUri);
 
@@ -112,16 +142,18 @@ namespace WinForm
                 var resp = await response.Content.ReadAsStringAsync();
                 Model.VerificationResultModel.Root root = JsonConvert.DeserializeObject<Model.VerificationResultModel.Root>(resp);
 
-                progress.Report($"({DateTime.Now}) Найдено {root.Result.Count} позиций для \"{measuringDevice.RegistrationNumber}\"");
+                progress.Report($"({DateTime.Now}) Найдено {root.Result.Count} позиций");
 
                 if (root.Result.Count == 0)
-                    throw new Exception($"Нет результатов для: {measuringDevice.RegistrationNumber}");
+                    throw new Exception($"Нет результатов");
 
                 if (start == 0)
                     numberRequests = Math.Ceiling((decimal)root.Result.Count / root.Result.Rows);
 
                 foreach (var item in root.Result.Items)
                 {
+                    (MiInfo MiInfo, VriInfo VriInfo, List<MietaItem> MietaList) verificationData;
+
                     var resultDataModel = new ResultDataModel()
                     {
                         Mit_notation = item.Mit_notation,
@@ -129,13 +161,16 @@ namespace WinForm
                         Mit_title = item.Mit_title,
                         Mi_modification = item.Mi_modification,
                         Mi_number = item.Mi_number,
+                        Verification_date = item.Verification_date,
                         Org_title = item.Org_title
                     };
 
                     try
                     {
                         progress.Report($"({DateTime.Now}) Поиск шифра клейма и ИНН для изделия с Регистрационным и Заводским номером: ({resultDataModel.Mit_number}\\{resultDataModel.Mi_number})");
-                        resultDataModel.signCipher = await GetRegistryElementModelAsync(item.Vri_id, numberPosition);
+
+                        verificationData = await GetVerificationDataByVriId(item.Vri_id, numberPosition);
+                        resultDataModel.signCipher = verificationData.VriInfo.signCipher;
 
                         // Если signCipher уже есть в словаре, то пропускаем поиск ИНН для signCipher
                         // Иначе обращаемся к АПИ с целью найти ИНН
@@ -156,23 +191,45 @@ namespace WinForm
                         continue;
                     }
 
+                    if (verificationData.MietaList != null)
+                    {
+                        foreach (var mieta in verificationData.MietaList)
+                        {
+                            ResultDataModel addResultDataModel = (ResultDataModel)resultDataModel.Clone();
+
+                            addResultDataModel.rankCode = mieta.rankCode;
+                            addResultDataModel.regNumber = mieta.regNumber;
+                            addResultDataModel.schemaTitle = mieta.schemaTitle;
+
+                            resultDataModels.Add(addResultDataModel);
+                        }
+                    }
+
+                    if (verificationData.MiInfo.etaMI != null)
+                    {
+                        ResultDataModel addResultDataModel = (ResultDataModel)resultDataModel.Clone();
+
+                        addResultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
+                        addResultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
+                        addResultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
+
+                        resultDataModels.Add(addResultDataModel);
+                    }
+      
                     numberPosition++;
-                    resultDataModels.Add(resultDataModel);
                 }
 
                 start += rows;
                 index++;
 
             } while (index < numberRequests);
-
-            return resultDataModels;
         }
 
-        private async Task<string> GetRegistryElementModelAsync(string vri_id, int numberPosition)
+        private async Task<(MiInfo MiInfo, VriInfo VriInfo, List<MietaItem> MietaList)> GetVerificationDataByVriId(string vri_id, int numberPosition)
         {
             Thread.Sleep(2000);
             var relativeUri = $"fundmetrology/eapi/vri/{vri_id}";
-            progress.Report($"({DateTime.Now}) Поиск шифра клейма позиции № {numberPosition} (vri_id = {vri_id})");
+            progress.Report($"({DateTime.Now}) Поиск шифра клейма позиции № {numberPosition}");
 
             using HttpResponseMessage httpResponseMessage = await client.GetAsync(relativeUri);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
@@ -184,7 +241,7 @@ namespace WinForm
                 var signCipher = root.Result.vriInfo.signCipher;
                 progress.Report($"({DateTime.Now}) Шифр клейма равен \"{signCipher}\"");
 
-                return signCipher;
+                return (root.Result.miInfo, root.Result.vriInfo, root.Result.means.mieta);
             }
 
             if (httpResponseMessage.Content != null)
@@ -192,6 +249,31 @@ namespace WinForm
 
             throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
         }
+
+        //private async Task<string> GetRegistryElementModelAsync(string vri_id, int numberPosition)
+        //{
+        //    Thread.Sleep(2000);
+        //    var relativeUri = $"fundmetrology/eapi/vri/{vri_id}";
+        //    progress.Report($"({DateTime.Now}) Поиск шифра клейма позиции № {numberPosition}");
+
+        //    using HttpResponseMessage httpResponseMessage = await client.GetAsync(relativeUri);
+        //    var content = await httpResponseMessage.Content.ReadAsStringAsync();
+
+        //    if (httpResponseMessage.IsSuccessStatusCode)
+        //    {
+        //        Model.RegistryElementModel.Root root = JsonConvert.DeserializeObject<Model.RegistryElementModel.Root>(content);
+
+        //        var signCipher = root.Result.vriInfo.signCipher;
+        //        progress.Report($"({DateTime.Now}) Шифр клейма равен \"{signCipher}\"");
+
+        //        return signCipher;
+        //    }
+
+        //    if (httpResponseMessage.Content != null)
+        //        httpResponseMessage.Content.Dispose();
+
+        //    throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
+        //}
 
         private async Task<string> GetTaxpayerIdentificationNumber(string signCipher)
         {
