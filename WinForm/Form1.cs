@@ -51,7 +51,6 @@ namespace WinForm
                 };
 
                 var sv = new SearchForVerifications(progress);
-                //resultDataModels = await Task.Run(() => sv.SearchByParametersFromFileAsync(measuringDevices));
                 await Task.Run(() => sv.SearchByParametersFromFileAsync(measuringDevices));
                 resultDataModels = sv.resultDataModels;
 
@@ -205,8 +204,8 @@ namespace WinForm
                     measuringDevices.Add(new MeasuringDevice()
                     {
                         RegistrationNumber = excelRange.Cells[i, 1].Value2.ToString(),
-                        StatePrimaryDenchmark = excelRange.Cells[i, 2].Value2.ToString(),
-                        Discharge = excelRange.Cells[i, 3].Value2.ToString()
+                        //StatePrimaryDenchmark = excelRange.Cells[i, 2].Value2.ToString(),
+                        //Discharge = excelRange.Cells[i, 3].Value2.ToString()
                     });
                 }
 

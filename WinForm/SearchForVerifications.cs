@@ -1,5 +1,4 @@
-﻿using Microsoft.Win32;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -9,7 +8,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using WinForm.ExceptionServise;
 using WinForm.Model;
 using WinForm.Model.RegistryElementModel;
@@ -44,22 +42,15 @@ namespace WinForm
 
             httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
-            //client = new HttpClient(handler: httpClientHandler, disposeHandler: true);
             client = new HttpClient();
             client.BaseAddress = new Uri(baseUri);
             client.DefaultRequestHeaders.Add("User-Agent", "C# console program");
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        public async Task GetRegistryItem(string vri_id)
-        { 
-        
-        }
-
         public async Task SearchByParametersFromFileAsync(List<MeasuringDevice> measuringDevices)
         {
             int countNode = measuringDevices.Count;   
-            //List<ResultDataModel> resultDataModels = new List<ResultDataModel>();
 
             progress.Report($"({DateTime.Now}) Начало поиска.");
 
@@ -71,8 +62,6 @@ namespace WinForm
                 try
                 {
                     await GetDataAsync(attributeLine);
-                    //var results = await GetDataAsync(attributeLine);
-                    //resultDataModels.AddRange(results);
                 }
                 catch (Exception ex)
                 {
@@ -80,11 +69,8 @@ namespace WinForm
                     throw;
                 }
 
-                var info = $"({DateTime.Now}) Получаны данные ({i + 1}/{countNode})." + Environment.NewLine;
-
-                info += $"\tРегистрационный номер: {measuringDevices[i].RegistrationNumber}" + Environment.NewLine
-                    + $"\tГЭТ: {measuringDevices[i].StatePrimaryDenchmark}" + Environment.NewLine
-                    + $"\tРазряд: {measuringDevices[i].Discharge}";
+                var info = $"({DateTime.Now}) Получаны данные ({i + 1}/{countNode})." + Environment.NewLine 
+                    + $"\tРегистрационный номер: {measuringDevices[i].RegistrationNumber}" + Environment.NewLine;
 
                 progress.Report($"{info}");
             }
@@ -133,7 +119,7 @@ namespace WinForm
 
             do
             {
-                //Thread.Sleep(2000);
+                Thread.Sleep(2000);
                 var relativeUri = $"fundmetrology/eapi/vri?start={start}&rows={rows}" + attributeLine; 
 
                 using HttpResponseMessage response = await client.GetAsync(relativeUri);
@@ -170,6 +156,7 @@ namespace WinForm
                         progress.Report($"({DateTime.Now}) Поиск шифра клейма и ИНН для изделия с Регистрационным и Заводским номером: ({resultDataModel.Mit_number}\\{resultDataModel.Mi_number})");
 
                         verificationData = await GetVerificationDataByVriId(item.Vri_id, numberPosition);
+                        // шифра клейма
                         resultDataModel.signCipher = verificationData.VriInfo.signCipher;
 
                         // Если signCipher уже есть в словаре, то пропускаем поиск ИНН для signCipher
@@ -207,20 +194,23 @@ namespace WinForm
 
                     if (verificationData.MiInfo.etaMI != null)
                     {
-                        ResultDataModel addResultDataModel = (ResultDataModel)resultDataModel.Clone();
+                        resultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
+                        resultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
+                        resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
 
-                        addResultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
-                        addResultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
-                        addResultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
+                        resultDataModels.Add(resultDataModel);
+                    }
 
-                        resultDataModels.Add(addResultDataModel);
+                    if (verificationData.MietaList == null && verificationData.MiInfo.etaMI == null)
+                    {
+                        resultDataModels.Add(resultDataModel);
                     }
       
                     numberPosition++;
                 }
 
                 start += rows;
-                index++;
+                ++index;
 
             } while (index < numberRequests);
         }
@@ -250,31 +240,6 @@ namespace WinForm
             throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
         }
 
-        //private async Task<string> GetRegistryElementModelAsync(string vri_id, int numberPosition)
-        //{
-        //    Thread.Sleep(2000);
-        //    var relativeUri = $"fundmetrology/eapi/vri/{vri_id}";
-        //    progress.Report($"({DateTime.Now}) Поиск шифра клейма позиции № {numberPosition}");
-
-        //    using HttpResponseMessage httpResponseMessage = await client.GetAsync(relativeUri);
-        //    var content = await httpResponseMessage.Content.ReadAsStringAsync();
-
-        //    if (httpResponseMessage.IsSuccessStatusCode)
-        //    {
-        //        Model.RegistryElementModel.Root root = JsonConvert.DeserializeObject<Model.RegistryElementModel.Root>(content);
-
-        //        var signCipher = root.Result.vriInfo.signCipher;
-        //        progress.Report($"({DateTime.Now}) Шифр клейма равен \"{signCipher}\"");
-
-        //        return signCipher;
-        //    }
-
-        //    if (httpResponseMessage.Content != null)
-        //        httpResponseMessage.Content.Dispose();
-
-        //    throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
-        //}
-
         private async Task<string> GetTaxpayerIdentificationNumber(string signCipher)
         {
             Thread.Sleep(2000);
@@ -295,7 +260,7 @@ namespace WinForm
                     throw new Exception($"Неудалось найти данные о ИНН по шифру клейма: \"{signCipher}\"");
 
                 var inn = docs[0]["inn"].ToString();
-                progress.Report($"({DateTime.Now}) Шифру клейма \"{signCipher}\" соответствует Инн: \"{inn}\"");
+                progress.Report($"({DateTime.Now}) Шифру клейма \"{signCipher}\" соответствует ИНН: \"{inn}\"");
 
                 return inn;
             }
