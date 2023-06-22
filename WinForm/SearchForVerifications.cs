@@ -6,17 +6,20 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WinForm.ExceptionServise;
 using WinForm.Model;
 using WinForm.Model.RegistryElementModel;
+using WinForm.Model.Base;
 
 namespace WinForm
 {
     public class SearchForVerifications
     {
-        const string baseUri = "https://fgis.gost.ru";
+        const string fgisGostUri = "https://fgis.gost.ru";
+        const string pubFsaGovUri = "https://pub.fsa.gov.ru";
         public List<ResultDataModel> resultDataModels { get; set; }
         private readonly IProgress<string> progress;
         static HttpClient? client;
@@ -43,7 +46,7 @@ namespace WinForm
             httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
             client = new HttpClient();
-            client.BaseAddress = new Uri(baseUri);
+            client.BaseAddress = new Uri(fgisGostUri);
             client.DefaultRequestHeaders.Add("User-Agent", "C# console program");
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
@@ -120,13 +123,13 @@ namespace WinForm
             do
             {
                 Thread.Sleep(2000);
-                var relativeUri = $"fundmetrology/eapi/vri?start={start}&rows={rows}" + attributeLine; 
+                var relativeUri = $"fundmetrology/eapi/vri?start={start}&rows={rows}" + attributeLine;
 
                 using HttpResponseMessage response = await client.GetAsync(relativeUri);
 
                 response.EnsureSuccessStatusCode();
                 var resp = await response.Content.ReadAsStringAsync();
-                Model.VerificationResultModel.Root root = JsonConvert.DeserializeObject<Model.VerificationResultModel.Root>(resp);
+                Root root = JsonConvert.DeserializeObject<Root>(resp);
 
                 progress.Report($"({DateTime.Now}) Найдено {root.Result.Count} позиций");
 
@@ -171,6 +174,8 @@ namespace WinForm
                             resultDataModel.Inn = await GetTaxpayerIdentificationNumber(resultDataModel.signCipher);
                             signCipherInn.Add(resultDataModel.signCipher, resultDataModel.Inn);
                         }
+
+                        //await GetCompanyInfoByTaxpayerIdentificationNumber(resultDataModel.Inn);
                     }
                     catch (Exception ex)
                     {
@@ -187,6 +192,7 @@ namespace WinForm
                             addResultDataModel.rankCode = mieta.rankCode;
                             addResultDataModel.regNumber = mieta.regNumber;
                             addResultDataModel.schemaTitle = mieta.schemaTitle;
+                            addResultDataModel.Npenumber = await GetNpenumber(mieta.mietaURL, mieta.regNumber);
 
                             resultDataModels.Add(addResultDataModel);
                         }
@@ -196,7 +202,7 @@ namespace WinForm
                     {
                         resultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
                         resultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
-                        resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
+                        resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;                        
 
                         resultDataModels.Add(resultDataModel);
                     }
@@ -215,18 +221,46 @@ namespace WinForm
             } while (index < numberRequests);
         }
 
+        private async Task<string> GetNpenumber(string mietaURL, string regNumber)
+        {
+            Thread.Sleep(2000);
+            progress.Report($"({DateTime.Now}) Поиск данных эталона по номеру: \"{regNumber}\"");
+
+            var rmieta_id = mietaURL.Substring(mietaURL.LastIndexOf("/") + 1);
+            var etalonUri = $"fundmetrology/cm/icdb/mieta/select?q=rmieta_id:{rmieta_id}&fl=number,mitype_num,mitype,minotation,modification,factory_num,year,schematype,schematitle,npenumber,npeUrl,rankcode,rankclass,applicability";
+
+            using HttpResponseMessage httpResponseMessage = await client.GetAsync(etalonUri);
+            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                Root root = JsonConvert.DeserializeObject<Root>(content);
+
+                var npenumber = root.response.docs.First().npenumber;
+                progress.Report($"({DateTime.Now}) Найден эталон: \"{npenumber}\"");
+
+                return npenumber;
+            }
+
+            if (httpResponseMessage.Content != null)
+                httpResponseMessage.Content.Dispose();
+
+            throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
+        }
+
         private async Task<(MiInfo MiInfo, VriInfo VriInfo, List<MietaItem> MietaList)> GetVerificationDataByVriId(string vri_id, int numberPosition)
         {
             Thread.Sleep(2000);
-            var relativeUri = $"fundmetrology/eapi/vri/{vri_id}";
             progress.Report($"({DateTime.Now}) Поиск шифра клейма позиции № {numberPosition}");
 
+            var relativeUri = $"fundmetrology/eapi/vri/{vri_id}";
+            
             using HttpResponseMessage httpResponseMessage = await client.GetAsync(relativeUri);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {
-                Model.RegistryElementModel.Root root = JsonConvert.DeserializeObject<Model.RegistryElementModel.Root>(content);
+                Root root = JsonConvert.DeserializeObject<Root>(content);
 
                 var signCipher = root.Result.vriInfo.signCipher;
                 progress.Report($"({DateTime.Now}) Шифр клейма равен \"{signCipher}\"");
@@ -243,8 +277,9 @@ namespace WinForm
         private async Task<string> GetTaxpayerIdentificationNumber(string signCipher)
         {
             Thread.Sleep(2000);
-            var relativeUri = $"fundmetrology/cm/xcdb/vcs/select?fq=sign:*{signCipher}*&q=*&fl=vcs_id,sign,act_no,act_date,title,inn,kpp,ogrn&sort=act_date+desc,sign+asc&rows=20&start=0";
             progress.Report($"({DateTime.Now}) Поиск ИНН по шифру клейма \"{signCipher}\"");
+
+            var relativeUri = $"fundmetrology/cm/xcdb/vcs/select?fq=sign:*{signCipher}*&q=*&fl=vcs_id,sign,act_no,act_date,title,inn,kpp,ogrn&sort=act_date+desc,sign+asc&rows=20&start=0";
 
             using HttpResponseMessage httpResponseMessage = await client.GetAsync(relativeUri);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
@@ -269,6 +304,80 @@ namespace WinForm
                 httpResponseMessage.Content.Dispose();
 
             throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
+        }
+
+        private async Task GetCompanyInfoByTaxpayerIdentificationNumber(string inn)
+        {
+            progress.Report($"({DateTime.Now}) Поиск данных о компании с ИНН: \"{inn}\"");
+            Thread.Sleep(2000);
+
+            var requestUri = "api/v1/ral/common/showcases/get";
+
+            var requestModel = new Root
+            {
+                numberOfAllRecords = false,
+                offset = 0,
+                limit = 10,
+                sort = new List<string> { "-id" },
+                columns = new List<Model.RequestModel.ColumnsItem>()
+            };
+            requestModel.columns.Add(new Model.RequestModel.ColumnsItem { name = "applicantInn", search = $"{inn}", type = 0 });
+
+            //var json = System.Text.Json.JsonSerializer.Serialize(requestModel);
+
+            var httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri(pubFsaGovUri);
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "/login");
+
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            var user = new User 
+            { 
+                username = "anonymous", 
+                password = "hrgesf7HDR67Bd"
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(user);
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            request.Headers.Add("Authorization", "null");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 YaBrowser/23.5.1.714 Yowser/2.5 Safari/537.36");
+            request.Headers.Add("Origin", "https://pub.fsa.gov.ru");
+            request.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"112\", \"YaBrowser\";v=\"23\", \"Not:A-Brand\";v=\"99\"");
+            request.Headers.Add("sec-ch-ua-mobile", "?0");
+            request.Headers.Add("Sec-Fetch-Dest", "empty");
+            request.Headers.Add("Sec-Fetch-Mode", "cors");
+            request.Headers.Add("Sec-Fetch-Site", "same-origin");
+
+            var response = await httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            string error = response.Headers.GetValues("Authorization").FirstOrDefault();
+
+            var content = await response.Content.ReadAsStringAsync();
+
+//            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+
+//            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+//            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+//            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+//;
+//            request.Headers.Add("Authorization", "Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiIyOTRhMGQ2ZC0zOTY1LTQ0OTQtOWNkYy1kYTU3MjYyOGMyZjQiLCJzdWIiOiJhbm9ueW1vdXMiLCJleHAiOjE2ODY3OTUxMDB9.DWmhFOQqImkyed6dyXmd-SU2C7Gm8UjkKN8PO5X8uTmqZxfiTtK7xKji3-wu_TT2-X4KB8f8w_-hspqWsDbjjA");
+//            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 YaBrowser/23.5.1.714 Yowser/2.5 Safari/537.36");
+//            request.Headers.Add("Origin", "https://pub.fsa.gov.ru");
+//            request.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"112\", \"YaBrowser\";v=\"23\", \"Not:A-Brand\";v=\"99\"");
+//            request.Headers.Add("sec-ch-ua-mobile", "?0");
+//            request.Headers.Add("Sec-Fetch-Dest", "empty");
+//            request.Headers.Add("Sec-Fetch-Mode", "cors");
+//            request.Headers.Add("Sec-Fetch-Site", "same-origin");
+
+//            var response = await httpClient.SendAsync(request);
+//            response.EnsureSuccessStatusCode();
+
+//            var content = await response.Content.ReadAsStringAsync();
         }
     }
 }

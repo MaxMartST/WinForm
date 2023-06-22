@@ -145,32 +145,34 @@ namespace WinForm
                 int rows = resultDataModels.Count;
 
                 worksheet.Cells[1, 1] = "Регистрационный номер типа";
-                worksheet.Cells[1, 2] = "Наименование типа";
-                worksheet.Cells[1, 3] = "Обозначение типа";
-                worksheet.Cells[1, 4] = "Модицикация";
-                worksheet.Cells[1, 5] = "Заводской серийный номер";
-                worksheet.Cells[1, 6] = "Шифр клейма";
+                worksheet.Cells[1, 2] = "ГЭТ";
+                worksheet.Cells[1, 3] = "Наименование типа";
+                worksheet.Cells[1, 4] = "Обозначение типа";
+                worksheet.Cells[1, 5] = "Модицикация";
+                worksheet.Cells[1, 6] = "Заводской серийный номер";
                 worksheet.Cells[1, 7] = "Регистрационный номер СИ в Перечне";
                 worksheet.Cells[1, 8] = "Код разряда эталона в ГПС, которому соответствует СИ";
                 worksheet.Cells[1, 9] = "Наименование поверочной схемы или методики поверки";
                 worksheet.Cells[1, 10] = "Дата поверки";
                 worksheet.Cells[1, 11] = "Наименование организации-поверителя";
-                worksheet.Cells[1, 12] = "ИНН";
+                worksheet.Cells[1, 12] = "Шифр клейма";
+                worksheet.Cells[1, 13] = "ИНН";
 
                 for (int a = 0, i = 2; a < rows; i++, a++)
                 {
                     worksheet.Cells[i, 1] = resultDataModels[a].Mit_number;
-                    worksheet.Cells[i, 2] = resultDataModels[a].Mit_title;
-                    worksheet.Cells[i, 3] = resultDataModels[a].Mit_notation;
-                    worksheet.Cells[i, 4] = resultDataModels[a].Mi_modification;
-                    worksheet.Cells[i, 5] = resultDataModels[a].Mi_number;
-                    worksheet.Cells[i, 6] = resultDataModels[a].signCipher;
+                    worksheet.Cells[i, 2] = resultDataModels[a].Npenumber;
+                    worksheet.Cells[i, 3] = resultDataModels[a].Mit_title;
+                    worksheet.Cells[i, 4] = resultDataModels[a].Mit_notation;
+                    worksheet.Cells[i, 5] = resultDataModels[a].Mi_modification;
+                    worksheet.Cells[i, 6] = resultDataModels[a].Mi_number;
                     worksheet.Cells[i, 7] = resultDataModels[a].regNumber;
                     worksheet.Cells[i, 8] = resultDataModels[a].rankCode;
                     worksheet.Cells[i, 9] = resultDataModels[a].schemaTitle;
                     worksheet.Cells[i, 10] = resultDataModels[a].Verification_date;
                     worksheet.Cells[i, 11] = resultDataModels[a].Org_title;
-                    worksheet.Cells[i, 12] = resultDataModels[a].Inn;
+                    worksheet.Cells[i, 12] = resultDataModels[a].signCipher;
+                    worksheet.Cells[i, 13] = resultDataModels[a].Inn;
                 }
 
                 worksheet.SaveAs(saveFileDialog1.FileName, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, ExcelApp.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing);

@@ -20,6 +20,7 @@ namespace WinForm.Model
         public string Verification_date { get; set; } //Дата поверки
         public string Org_title { get; set; } //Наименование организации-поверителя
         public string Inn { get; set; } //ИНН
+        public string Npenumber { get; set; } //ГПЭ
 
         public object Clone()
         {

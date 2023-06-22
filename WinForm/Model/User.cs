@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WinForm.Model.RegistryElementModel
+namespace WinForm.Model
 {
-    public class Root
+    public class User
     {
-        public Result Result { get; set; }
+        public string username { get; set; }
+        public string password { get; set; }
     }
 }
