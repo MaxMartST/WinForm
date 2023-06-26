@@ -23,6 +23,7 @@ namespace WinForm
         public List<ResultDataModel> resultDataModels { get; set; }
         private readonly IProgress<string> progress;
         static HttpClient? client;
+        static HttpClient? pubFsaGovClient;
 
         public SearchForVerifications(IProgress<string> progress)
         {
@@ -49,6 +50,9 @@ namespace WinForm
             client.BaseAddress = new Uri(fgisGostUri);
             client.DefaultRequestHeaders.Add("User-Agent", "C# console program");
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            pubFsaGovClient = new HttpClient();
+            pubFsaGovClient.BaseAddress = new Uri(pubFsaGovUri);
         }
 
         public async Task SearchByParametersFromFileAsync(List<MeasuringDevice> measuringDevices)
@@ -114,7 +118,7 @@ namespace WinForm
 
         private async Task GetDataAsync(string attributeLine)
         {
-            var signCipherInn = new Dictionary<string, string>();
+            var signCipherInn = new Dictionary<string, CompanyData>();
 
             const int rows = 100;
             int index = 0, start = 0, numberPosition = 1;
@@ -151,7 +155,7 @@ namespace WinForm
                         Mi_modification = item.Mi_modification,
                         Mi_number = item.Mi_number,
                         Verification_date = item.Verification_date,
-                        Org_title = item.Org_title
+                        //Org_title = item.Org_title
                     };
 
                     try
@@ -166,16 +170,16 @@ namespace WinForm
                         // Иначе обращаемся к АПИ с целью найти ИНН
                         if (signCipherInn.ContainsKey(resultDataModel.signCipher))
                         {
-                            resultDataModel.Inn = signCipherInn[resultDataModel.signCipher];
-                            progress.Report($"({DateTime.Now}) Шифр кейма \"{resultDataModel.signCipher}\" уже имеет ИНН, равный: \"{resultDataModel.Inn}\"");
+                            resultDataModel.CompanyData = signCipherInn[resultDataModel.signCipher];
+                            progress.Report($"({DateTime.Now}) Шифр кейма \"{resultDataModel.signCipher}\" уже имеет ИНН, равный: \"{resultDataModel.CompanyData.Inn}\"");
                         }
                         else
                         {
-                            resultDataModel.Inn = await GetTaxpayerIdentificationNumber(resultDataModel.signCipher);
-                            signCipherInn.Add(resultDataModel.signCipher, resultDataModel.Inn);
-                        }
+                            var inn = await GetTaxpayerIdentificationNumber(resultDataModel.signCipher);
 
-                        //await GetCompanyInfoByTaxpayerIdentificationNumber(resultDataModel.Inn);
+                            resultDataModel.CompanyData = await GetCompanyInfoAsync(inn);
+                            signCipherInn.Add(resultDataModel.signCipher, resultDataModel.CompanyData);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -304,6 +308,165 @@ namespace WinForm
                 httpResponseMessage.Content.Dispose();
 
             throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
+        }
+
+        private async Task<CompanyData> GetCompanyInfoAsync(string inn)
+        {
+            // получить токен
+            var jwt = await GetJwt();
+
+            // проверить актуальность lwt
+            if (!await CheckToken(jwt))
+            {
+                // получить токен повторно
+                jwt = await GetJwt();
+            }
+
+            // Запрос POST с jw
+            // Получить id
+            var companiesId = await GetCompaniesId(jwt, inn);
+
+            // Запрос GET
+            // Получить CompanyData
+            return await GetCompanyDataByCompaniesId(jwt, companiesId);
+        }
+
+        private async Task<string> GetJwt()
+        {
+            Thread.Sleep(2000);
+            var request = new HttpRequestMessage(HttpMethod.Post, "/login");
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            var user = new User
+            {
+                username = "anonymous",
+                password = "hrgesf7HDR67Bd"
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(user);
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            request.Headers.Add("Authorization", "null");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 YaBrowser/23.5.1.714 Yowser/2.5 Safari/537.36");
+            request.Headers.Add("Origin", "https://pub.fsa.gov.ru");
+            request.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"112\", \"YaBrowser\";v=\"23\", \"Not:A-Brand\";v=\"99\"");
+            request.Headers.Add("sec-ch-ua-mobile", "?0");
+            request.Headers.Add("Sec-Fetch-Dest", "empty");
+            request.Headers.Add("Sec-Fetch-Mode", "cors");
+            request.Headers.Add("Sec-Fetch-Site", "same-origin");
+
+            var response = await pubFsaGovClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            string authorization = response.Headers.GetValues("Authorization").FirstOrDefault();
+            int index = authorization.IndexOf("Bearer") + "Bearer".Length;
+
+            return authorization.Substring(index + 1);
+        }
+
+        private async Task<bool> CheckToken(string jwt)
+        {
+            Thread.Sleep(2000);
+            var request = new HttpRequestMessage(HttpMethod.Get, $"token/is/actual/{jwt}");
+
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add("Authorization", $"Bearer {jwt}");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 YaBrowser/23.5.1.714 Yowser/2.5 Safari/537.36");
+            request.Headers.Add("Origin", "https://pub.fsa.gov.ru");
+            request.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"112\", \"YaBrowser\";v=\"23\", \"Not:A-Brand\";v=\"99\"");
+            request.Headers.Add("sec-ch-ua-mobile", "?0");
+            request.Headers.Add("Sec-Fetch-Dest", "empty");
+            request.Headers.Add("Sec-Fetch-Mode", "cors");
+            request.Headers.Add("Sec-Fetch-Site", "same-origin");
+
+            var response = await pubFsaGovClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            return content == "true" ? true : false;
+        }
+
+        private async Task<string> GetCompaniesId(string jwt, string inn)
+        {
+            Thread.Sleep(2000);
+            progress.Report($"({DateTime.Now}) Поиск id компании");
+            
+            var requestModel = new Root
+            {
+                numberOfAllRecords = false,
+                offset = 0,
+                limit = 10,
+                sort = new List<string> { "-id" },
+                columns = new List<Model.RequestModel.ColumnsItem>()
+            };
+            requestModel.columns.Add(new Model.RequestModel.ColumnsItem { name = "applicantInn", search = $"{inn}", type = 0 });
+
+            var content = System.Text.Json.JsonSerializer.Serialize(requestModel);
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/ral/common/showcases/get");
+
+            request.Content = new StringContent(content, Encoding.UTF8, "application/json");
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add("Authorization", $"Bearer {jwt}");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 YaBrowser/23.5.1.714 Yowser/2.5 Safari/537.36");
+            request.Headers.Add("Origin", "https://pub.fsa.gov.ru");
+            request.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"112\", \"YaBrowser\";v=\"23\", \"Not:A-Brand\";v=\"99\"");
+            request.Headers.Add("sec-ch-ua-mobile", "?0");
+            request.Headers.Add("Sec-Fetch-Dest", "empty");
+            request.Headers.Add("Sec-Fetch-Mode", "cors");
+            request.Headers.Add("Sec-Fetch-Site", "same-origin");
+
+            var response = await pubFsaGovClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var json = JObject.Parse(responseContent);
+
+            var item = json["items"][0];
+
+            return item["id"].ToString();
+        }
+
+        private async Task<CompanyData> GetCompanyDataByCompaniesId(string jwt, string companiesId) 
+        {
+            Thread.Sleep(2000);
+            progress.Report($"({DateTime.Now}) Поиск данных о компании");
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"api/v1/ral/common/companies/{companiesId}");
+
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add("Authorization", $"Bearer {jwt}");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 YaBrowser/23.5.1.714 Yowser/2.5 Safari/537.36");
+            request.Headers.Add("Origin", "https://pub.fsa.gov.ru");
+            request.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"112\", \"YaBrowser\";v=\"23\", \"Not:A-Brand\";v=\"99\"");
+            request.Headers.Add("sec-ch-ua-mobile", "?0");
+            request.Headers.Add("Sec-Fetch-Dest", "empty");
+            request.Headers.Add("Sec-Fetch-Mode", "cors");
+            request.Headers.Add("Sec-Fetch-Site", "same-origin");
+
+            var response = await pubFsaGovClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var json = JObject.Parse(responseContent);
+
+            return new CompanyData()
+            { 
+                Inn = json["applicant"]["inn"].ToString(),
+                ShortNameCompany = json["applicant"]["shortName"].ToString(),
+                FullNameCompany = json["applicant"]["fullName"].ToString(),
+                FullAddres = json["applicant"]["addresses"][0]["fullAddress"].ToString(),
+                Kpp = json["applicant"]["kpp"].ToString(),
+                Ogrn = json["applicant"]["ogrn"].ToString(),
+                Surname = json["applicant"]["person"]["surname"].ToString(),
+                Name = json["applicant"]["person"]["name"].ToString(),
+                Patronymic = json["applicant"]["person"]["patronymic"].ToString(),
+                Phone = json["applicant"]["contacts"][0]["value"].ToString(),
+                Fax = json["applicant"]["contacts"][2]["value"].ToString(),
+                Mail = json["applicant"]["contacts"][1]["value"].ToString()
+            };
         }
 
         private async Task GetCompanyInfoByTaxpayerIdentificationNumber(string inn)

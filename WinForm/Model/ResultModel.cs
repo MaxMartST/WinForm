@@ -18,9 +18,11 @@ namespace WinForm.Model
         public string rankCode { get; set; } //Код разряда эталона в ГПС, которому соответствует СИ
         public string schemaTitle { get; set; } //Наименование разряда эталона в ГПС, которому соответствует СИ
         public string Verification_date { get; set; } //Дата поверки
-        public string Org_title { get; set; } //Наименование организации-поверителя
-        public string Inn { get; set; } //ИНН
+        //public string Org_title { get; set; } //Наименование организации-поверителя
+        //public string Inn { get; set; } //ИНН
         public string Npenumber { get; set; } //ГПЭ
+        // данные о компании
+        public CompanyData CompanyData { get; set; }
 
         public object Clone()
         {

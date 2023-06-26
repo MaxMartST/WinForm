@@ -154,9 +154,17 @@ namespace WinForm
                 worksheet.Cells[1, 8] = "Код разряда эталона в ГПС, которому соответствует СИ";
                 worksheet.Cells[1, 9] = "Наименование поверочной схемы или методики поверки";
                 worksheet.Cells[1, 10] = "Дата поверки";
-                worksheet.Cells[1, 11] = "Наименование организации-поверителя";
-                worksheet.Cells[1, 12] = "Шифр клейма";
-                worksheet.Cells[1, 13] = "ИНН";
+                worksheet.Cells[1, 11] = "Шифр клейма";
+                worksheet.Cells[1, 12] = "ИНН";
+                worksheet.Cells[1, 13] = "Короткое наименование организации-поверителя";
+                worksheet.Cells[1, 14] = "Полное наименование организации-поверителя";
+                worksheet.Cells[1, 15] = "КПП юридического лица";
+                worksheet.Cells[1, 16] = "ОГРН юридического лица";
+                worksheet.Cells[1, 17] = "Адрес места нахождения юридического лица";
+                worksheet.Cells[1, 18] = "ФИО руководителя юридического лица";
+                worksheet.Cells[1, 19] = "Номер телефона юридического лица";
+                worksheet.Cells[1, 20] = "Номер факса юридического лица";
+                worksheet.Cells[1, 21] = "Адрес электронной почты юридического лица";
 
                 for (int a = 0, i = 2; a < rows; i++, a++)
                 {
@@ -170,9 +178,17 @@ namespace WinForm
                     worksheet.Cells[i, 8] = resultDataModels[a].rankCode;
                     worksheet.Cells[i, 9] = resultDataModels[a].schemaTitle;
                     worksheet.Cells[i, 10] = resultDataModels[a].Verification_date;
-                    worksheet.Cells[i, 11] = resultDataModels[a].Org_title;
-                    worksheet.Cells[i, 12] = resultDataModels[a].signCipher;
-                    worksheet.Cells[i, 13] = resultDataModels[a].Inn;
+                    worksheet.Cells[i, 11] = resultDataModels[a].signCipher;
+                    worksheet.Cells[i, 12] = resultDataModels[a].CompanyData.Inn;
+                    worksheet.Cells[i, 13] = resultDataModels[a].CompanyData.ShortNameCompany;
+                    worksheet.Cells[i, 14] = resultDataModels[a].CompanyData.FullNameCompany;
+                    worksheet.Cells[i, 15] = resultDataModels[a].CompanyData.Kpp;
+                    worksheet.Cells[i, 16] = resultDataModels[a].CompanyData.Ogrn;
+                    worksheet.Cells[i, 17] = resultDataModels[a].CompanyData.FullAddres;
+                    worksheet.Cells[i, 18] = resultDataModels[a].CompanyData.GetNamePersone();
+                    worksheet.Cells[i, 19] = resultDataModels[a].CompanyData.Phone;
+                    worksheet.Cells[i, 20] = resultDataModels[a].CompanyData.Fax;
+                    worksheet.Cells[i, 21] = resultDataModels[a].CompanyData.Mail;
                 }
 
                 worksheet.SaveAs(saveFileDialog1.FileName, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, ExcelApp.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing);
