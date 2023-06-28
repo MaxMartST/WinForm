@@ -452,6 +452,33 @@ namespace WinForm
             var responseContent = await response.Content.ReadAsStringAsync();
             var json = JObject.Parse(responseContent);
 
+            string phone = "" , mail = "", fax = "";
+            var count = json["applicant"]["contacts"].Count();
+
+            switch (count)
+            { 
+                case 1 :
+                    var item = json["applicant"]["contacts"][0];
+                    if (item["idType"].ToString().Equals("1")) phone = json["applicant"]["contacts"][0]["value"].ToString();
+                    if (item["idType"].ToString().Equals("4")) mail = json["applicant"]["contacts"][0]["value"].ToString();
+                    break;
+                case 2 :
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (json["applicant"]["contacts"][i]["idType"].ToString().Equals("1")) phone = json["applicant"]["contacts"][i]["value"].ToString();
+                        if (json["applicant"]["contacts"][i]["idType"].ToString().Equals("4")) mail = json["applicant"]["contacts"][i]["value"].ToString();
+                    }
+                    break;
+                case 3 :
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (json["applicant"]["contacts"][i]["idType"].ToString().Equals("1")) phone = json["applicant"]["contacts"][i]["value"].ToString();
+                        if (json["applicant"]["contacts"][i]["idType"].ToString().Equals("4")) mail = json["applicant"]["contacts"][i]["value"].ToString();
+                        if (json["applicant"]["contacts"][i]["idType"].ToString().Equals("3")) fax = json["applicant"]["contacts"][i]["value"].ToString();
+                    }
+                    break;
+            }
+
             return new CompanyData()
             { 
                 Inn = json["applicant"]["inn"].ToString(),
@@ -463,84 +490,10 @@ namespace WinForm
                 Surname = json["applicant"]["person"]["surname"].ToString(),
                 Name = json["applicant"]["person"]["name"].ToString(),
                 Patronymic = json["applicant"]["person"]["patronymic"].ToString(),
-                Phone = json["applicant"]["contacts"][0]["value"].ToString(),
-                Fax = json["applicant"]["contacts"][2]["value"].ToString(),
-                Mail = json["applicant"]["contacts"][1]["value"].ToString()
+                Phone = phone,
+                Fax = fax,
+                Mail = mail
             };
-        }
-
-        private async Task GetCompanyInfoByTaxpayerIdentificationNumber(string inn)
-        {
-            progress.Report($"({DateTime.Now}) Поиск данных о компании с ИНН: \"{inn}\"");
-            Thread.Sleep(2000);
-
-            var requestUri = "api/v1/ral/common/showcases/get";
-
-            var requestModel = new Root
-            {
-                numberOfAllRecords = false,
-                offset = 0,
-                limit = 10,
-                sort = new List<string> { "-id" },
-                columns = new List<Model.RequestModel.ColumnsItem>()
-            };
-            requestModel.columns.Add(new Model.RequestModel.ColumnsItem { name = "applicantInn", search = $"{inn}", type = 0 });
-
-            //var json = System.Text.Json.JsonSerializer.Serialize(requestModel);
-
-            var httpClient = new HttpClient();
-            httpClient.BaseAddress = new Uri(pubFsaGovUri);
-
-            var request = new HttpRequestMessage(HttpMethod.Post, "/login");
-
-            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            var user = new User 
-            { 
-                username = "anonymous", 
-                password = "hrgesf7HDR67Bd"
-            };
-
-            var json = System.Text.Json.JsonSerializer.Serialize(user);
-            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-            request.Headers.Add("Authorization", "null");
-            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 YaBrowser/23.5.1.714 Yowser/2.5 Safari/537.36");
-            request.Headers.Add("Origin", "https://pub.fsa.gov.ru");
-            request.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"112\", \"YaBrowser\";v=\"23\", \"Not:A-Brand\";v=\"99\"");
-            request.Headers.Add("sec-ch-ua-mobile", "?0");
-            request.Headers.Add("Sec-Fetch-Dest", "empty");
-            request.Headers.Add("Sec-Fetch-Mode", "cors");
-            request.Headers.Add("Sec-Fetch-Site", "same-origin");
-
-            var response = await httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-
-            string error = response.Headers.GetValues("Authorization").FirstOrDefault();
-
-            var content = await response.Content.ReadAsStringAsync();
-
-//            var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
-
-//            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-//            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-//            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-//;
-//            request.Headers.Add("Authorization", "Bearer eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiIyOTRhMGQ2ZC0zOTY1LTQ0OTQtOWNkYy1kYTU3MjYyOGMyZjQiLCJzdWIiOiJhbm9ueW1vdXMiLCJleHAiOjE2ODY3OTUxMDB9.DWmhFOQqImkyed6dyXmd-SU2C7Gm8UjkKN8PO5X8uTmqZxfiTtK7xKji3-wu_TT2-X4KB8f8w_-hspqWsDbjjA");
-//            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 YaBrowser/23.5.1.714 Yowser/2.5 Safari/537.36");
-//            request.Headers.Add("Origin", "https://pub.fsa.gov.ru");
-//            request.Headers.Add("sec-ch-ua", "\"Chromium\";v=\"112\", \"YaBrowser\";v=\"23\", \"Not:A-Brand\";v=\"99\"");
-//            request.Headers.Add("sec-ch-ua-mobile", "?0");
-//            request.Headers.Add("Sec-Fetch-Dest", "empty");
-//            request.Headers.Add("Sec-Fetch-Mode", "cors");
-//            request.Headers.Add("Sec-Fetch-Site", "same-origin");
-
-//            var response = await httpClient.SendAsync(request);
-//            response.EnsureSuccessStatusCode();
-
-//            var content = await response.Content.ReadAsStringAsync();
         }
     }
 }
