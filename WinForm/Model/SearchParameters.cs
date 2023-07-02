@@ -8,7 +8,15 @@ namespace WinForm.Model
 {
     public class SearchParameters
     {
-        public string? RegistrationNumber { get; set; }
-        public int? YearVerification { get; set; }
+        public string? RegistrationNumber { get; private set; }
+        public int? YearVerification { get; private set; }
+        public string? RankCode { get; private set; }
+
+        public SearchParameters(string? registrationNumber, int? yearVerification, string? rankCode)
+        { 
+            RegistrationNumber = registrationNumber;
+            YearVerification = yearVerification;
+            RankCode = rankCode;
+        }
     }
 }

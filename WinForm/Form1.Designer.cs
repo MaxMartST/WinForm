@@ -47,6 +47,10 @@
             registrationNumberTextBox = new System.Windows.Forms.TextBox();
             label5 = new System.Windows.Forms.Label();
             YearVerificationTextBox = new System.Windows.Forms.TextBox();
+            radioButton1 = new System.Windows.Forms.RadioButton();
+            radioButton2 = new System.Windows.Forms.RadioButton();
+            label3 = new System.Windows.Forms.Label();
+            comboBox1 = new System.Windows.Forms.ComboBox();
             searchButtonByForm = new System.Windows.Forms.Button();
             progressBar1 = new System.Windows.Forms.ProgressBar();
             ((System.ComponentModel.ISupportInitialize)fileSystemWatcher1).BeginInit();
@@ -85,7 +89,6 @@
             // button2
             // 
             button2.Cursor = System.Windows.Forms.Cursors.Hand;
-            button2.Enabled = false;
             button2.Location = new System.Drawing.Point(665, 398);
             button2.Name = "button2";
             button2.Size = new System.Drawing.Size(123, 40);
@@ -179,7 +182,10 @@
             flowLayoutPanel1.Controls.Add(registrationNumberTextBox);
             flowLayoutPanel1.Controls.Add(label5);
             flowLayoutPanel1.Controls.Add(YearVerificationTextBox);
-            flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            flowLayoutPanel1.Controls.Add(radioButton1);
+            flowLayoutPanel1.Controls.Add(radioButton2);
+            flowLayoutPanel1.Controls.Add(label3);
+            flowLayoutPanel1.Controls.Add(comboBox1);
             flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             flowLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
@@ -198,10 +204,9 @@
             // 
             // registrationNumberTextBox
             // 
-            registrationNumberTextBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             registrationNumberTextBox.Location = new System.Drawing.Point(3, 18);
             registrationNumberTextBox.Name = "registrationNumberTextBox";
-            registrationNumberTextBox.Size = new System.Drawing.Size(200, 23);
+            registrationNumberTextBox.Size = new System.Drawing.Size(190, 23);
             registrationNumberTextBox.TabIndex = 1;
             registrationNumberTextBox.TextChanged += registrationNumberBox_TextChanged;
             // 
@@ -218,8 +223,55 @@
             // 
             YearVerificationTextBox.Location = new System.Drawing.Point(3, 62);
             YearVerificationTextBox.Name = "YearVerificationTextBox";
-            YearVerificationTextBox.Size = new System.Drawing.Size(200, 23);
+            YearVerificationTextBox.Size = new System.Drawing.Size(190, 23);
             YearVerificationTextBox.TabIndex = 51;
+            // 
+            // radioButton1
+            // 
+            radioButton1.AutoSize = true;
+            radioButton1.Checked = true;
+            radioButton1.Location = new System.Drawing.Point(3, 91);
+            radioButton1.Name = "radioButton1";
+            radioButton1.Size = new System.Drawing.Size(42, 19);
+            radioButton1.TabIndex = 51;
+            radioButton1.TabStop = true;
+            radioButton1.Text = "СИ";
+            radioButton1.UseVisualStyleBackColor = true;
+            radioButton1.CheckedChanged += radioButton1_CheckedChanged;
+            // 
+            // radioButton2
+            // 
+            radioButton2.AutoSize = true;
+            radioButton2.Location = new System.Drawing.Point(3, 116);
+            radioButton2.Name = "radioButton2";
+            radioButton2.Size = new System.Drawing.Size(64, 19);
+            radioButton2.TabIndex = 53;
+            radioButton2.Text = "Эталон";
+            radioButton2.UseVisualStyleBackColor = true;
+            radioButton2.CheckedChanged += radioButton2_CheckedChanged;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Enabled = false;
+            label3.Location = new System.Drawing.Point(3, 138);
+            label3.Name = "label3";
+            label3.Size = new System.Drawing.Size(91, 15);
+            label3.TabIndex = 52;
+            label3.Text = "Разряд эталона";
+            label3.Click += label3_Click;
+            // 
+            // comboBox1
+            // 
+            comboBox1.Enabled = false;
+            comboBox1.FormattingEnabled = true;
+            comboBox1.Items.AddRange(new object[] { "1Р", "2P", "3P" });
+            comboBox1.Location = new System.Drawing.Point(3, 156);
+            comboBox1.Name = "comboBox1";
+            comboBox1.Size = new System.Drawing.Size(190, 23);
+            comboBox1.TabIndex = 3;
+            comboBox1.TabStop = false;
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             // 
             // searchButtonByForm
             // 
@@ -290,10 +342,14 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Button searchButtonByForm;
-        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox registrationNumberTextBox;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.TextBox YearVerificationTextBox;
+        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.Label label3;
+        public System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.RadioButton radioButton1;
+        private System.Windows.Forms.RadioButton radioButton2;
     }
 }

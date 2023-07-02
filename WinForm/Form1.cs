@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WinForm.Model;
@@ -17,11 +18,13 @@ namespace WinForm
             measuringDevices = new();
             resultDataModels = new();
             itemsItems = new();
+            rankCode = string.Empty;
         }
 
         private List<MeasuringDevice> measuringDevices;
         private List<ResultDataModel> resultDataModels;
         private List<ItemsItem> itemsItems;
+        private string rankCode;
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -86,31 +89,29 @@ namespace WinForm
 
                 informationTextBox.Clear();
                 resultDataModels.Clear();
-
-                var searchParameters = new SearchParameters
-                {
-                    RegistrationNumber = registrationNumberTextBox.Text,
-                    YearVerification = YearVerificationTextBox.Text == "" ? null : Int32.Parse(YearVerificationTextBox.Text)
-                };
-
                 progressBar1.Show();
 
-                var progress = new Progress<string>();
-                progress.ProgressChanged += (s, message) =>
-                {
-                    if (!informationTextBox.IsDisposed)
-                        informationTextBox.AppendText(message + Environment.NewLine);
-                };
+                //var searchParameters = new SearchParameters(
+                //    registrationNumberTextBox.Text,
+                //    YearVerificationTextBox.Text == "" ? null : Int32.Parse(YearVerificationTextBox.Text), 
+                //    rankCode);
 
-                var sv = new SearchForVerifications(progress);
-                //resultDataModels = await Task.Run(() => sv.SearchByParametersFromFileAsync(measuringDevices));
-                await Task.Run(() => sv.SearchByFormAsync(searchParameters));
-                resultDataModels = sv.resultDataModels;
+                //var progress = new Progress<string>();
+                //progress.ProgressChanged += (s, message) =>
+                //{
+                //    if (!informationTextBox.IsDisposed)
+                //        informationTextBox.AppendText(message + Environment.NewLine);
+                //};
+
+                //var sv = new SearchForVerifications(progress);
+                //await Task.Run(() => sv.SearchByFormAsync(searchParameters));
+                //resultDataModels = sv.resultDataModels;
+
+                informationTextBox.AppendText($"({DateTime.Now}) rankCode: \"{rankCode}\"" + Environment.NewLine);
 
                 progressBar1.Hide();
 
-                if (resultDataModels.Count > 0)
-                    button2.Enabled = true;
+                button2.Enabled = resultDataModels.Count > 0;
             }
             catch (FormatException)
             {
@@ -235,12 +236,12 @@ namespace WinForm
             }
         }
 
-        void CheckInputBoxes()
+        private void CheckInputBoxes()
         {
-            if (registrationNumberTextBox.Text != "")
-                searchButtonByForm.Enabled = true;
-            else
-                searchButtonByForm.Enabled = false;
+            searchButtonByForm.Enabled = !string.IsNullOrEmpty(registrationNumberTextBox.Text); //registrationNumberTextBox.Text != "";
+
+            if (!string.IsNullOrEmpty(registrationNumberTextBox.Text) && comboBox1.Enabled)
+                searchButtonByForm.Enabled = !string.IsNullOrEmpty(rankCode);
         }
 
         private void registrationNumberBox_TextChanged(object sender, EventArgs e)
@@ -266,6 +267,45 @@ namespace WinForm
         private void flowLayoutPanel1_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        private void label3_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            RadioButton radioButton = (RadioButton)sender;
+            if (radioButton.Checked)
+            {
+                label3.Enabled = false;
+                comboBox1.Enabled = false;
+                rankCode = string.Empty;
+
+                informationTextBox.AppendText($"({DateTime.Now}) Был выбран: \"{radioButton.Text}\"" + Environment.NewLine);
+            }
+        }
+
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            RadioButton radioButton = (RadioButton)sender;
+            if (radioButton.Checked)
+            {
+                label3.Enabled = true;
+                comboBox1.Enabled = true;
+                rankCode = comboBox1.SelectedItem == null ? string.Empty : comboBox1.SelectedItem.ToString();
+
+                informationTextBox.AppendText($"({DateTime.Now}) Был выбран: \"{radioButton.Text}\"" + Environment.NewLine);
+            }
+
+            CheckInputBoxes();
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            rankCode = comboBox1.SelectedItem.ToString();
+            CheckInputBoxes();
         }
     }
 }
