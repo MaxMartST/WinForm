@@ -91,23 +91,21 @@ namespace WinForm
                 resultDataModels.Clear();
                 progressBar1.Show();
 
-                //var searchParameters = new SearchParameters(
-                //    registrationNumberTextBox.Text,
-                //    YearVerificationTextBox.Text == "" ? null : Int32.Parse(YearVerificationTextBox.Text), 
-                //    rankCode);
+                var searchParameters = new SearchParameters(
+                    registrationNumberTextBox.Text,
+                    YearVerificationTextBox.Text == "" ? null : Int32.Parse(YearVerificationTextBox.Text),
+                    rankCode);
 
-                //var progress = new Progress<string>();
-                //progress.ProgressChanged += (s, message) =>
-                //{
-                //    if (!informationTextBox.IsDisposed)
-                //        informationTextBox.AppendText(message + Environment.NewLine);
-                //};
+                var progress = new Progress<string>();
+                progress.ProgressChanged += (s, message) =>
+                {
+                    if (!informationTextBox.IsDisposed)
+                        informationTextBox.AppendText(message + Environment.NewLine);
+                };
 
-                //var sv = new SearchForVerifications(progress);
-                //await Task.Run(() => sv.SearchByFormAsync(searchParameters));
-                //resultDataModels = sv.resultDataModels;
-
-                informationTextBox.AppendText($"({DateTime.Now}) rankCode: \"{rankCode}\"" + Environment.NewLine);
+                var sv = new SearchForVerifications(progress);
+                await Task.Run(() => sv.SearchByFormAsync(searchParameters));
+                resultDataModels = sv.resultDataModels;
 
                 progressBar1.Hide();
 

@@ -68,7 +68,7 @@ namespace WinForm
                 // Обращение к API
                 try
                 {
-                    await GetDataAsync(attributeLine);
+                    await GetDataAsync(attributeLine, "");
                 }
                 catch (Exception ex)
                 {
@@ -100,7 +100,7 @@ namespace WinForm
 
             try
             {
-                await GetDataAsync(attributeLine);
+                await GetDataAsync(attributeLine, searchParameters.RankCode);
             }
             catch (Exception ex)
             {
@@ -116,7 +116,7 @@ namespace WinForm
             progress.Report($"({DateTime.Now}) Конец поиска.");
         }
 
-        private async Task GetDataAsync(string attributeLine)
+        private async Task GetDataAsync(string attributeLine, string? rankCode)
         {
             var signCipherInn = new Dictionary<string, CompanyData>();
 
@@ -187,10 +187,13 @@ namespace WinForm
                         continue;
                     }
 
-                    if (verificationData.MietaList != null)
+                    if (verificationData.MietaList != null && !string.IsNullOrEmpty(rankCode))
                     {
                         foreach (var mieta in verificationData.MietaList)
                         {
+                            if (mieta.rankCode != rankCode)
+                                continue;
+
                             ResultDataModel addResultDataModel = (ResultDataModel)resultDataModel.Clone();
 
                             addResultDataModel.rankCode = mieta.rankCode;
@@ -202,16 +205,22 @@ namespace WinForm
                         }
                     }
 
-                    if (verificationData.MiInfo.etaMI != null)
+                    if (verificationData.MiInfo.etaMI != null && !string.IsNullOrEmpty(rankCode))
                     {
                         resultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
                         resultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
                         resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;                        
 
-                        resultDataModels.Add(resultDataModel);
+                        if(verificationData.MiInfo.etaMI.rankCode == rankCode)
+                            resultDataModels.Add(resultDataModel);
                     }
 
-                    if (verificationData.MietaList == null && verificationData.MiInfo.etaMI == null)
+                    //if (verificationData.MietaList == null && verificationData.MiInfo.etaMI == null)
+                    //{
+                    //    resultDataModels.Add(resultDataModel);
+                    //}
+
+                    if (string.IsNullOrEmpty(rankCode))
                     {
                         resultDataModels.Add(resultDataModel);
                     }
