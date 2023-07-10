@@ -265,7 +265,7 @@
             // 
             comboBox1.Enabled = false;
             comboBox1.FormattingEnabled = true;
-            comboBox1.Items.AddRange(new object[] { "1Р", "2P", "3P" });
+            comboBox1.Items.AddRange(new object[] { "0Р", "1Р", "2Р", "3Р", "4Р", "5Р", "РЭ", "СИ", "ВЭ" });
             comboBox1.Location = new System.Drawing.Point(3, 156);
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new System.Drawing.Size(190, 23);

@@ -119,6 +119,7 @@ namespace WinForm
         private async Task GetDataAsync(string attributeLine, string? rankCode)
         {
             var signCipherInn = new Dictionary<string, CompanyData>();
+            var resultDataModelList = new List<ResultDataModel>();
 
             const int rows = 100;
             int index = 0, start = 0, numberPosition = 1;
@@ -155,7 +156,7 @@ namespace WinForm
                         Mi_modification = item.Mi_modification,
                         Mi_number = item.Mi_number,
                         Verification_date = item.Verification_date,
-                        //Org_title = item.Org_title
+                        Org_title = item.Org_title
                     };
 
                     try
@@ -209,22 +210,17 @@ namespace WinForm
                     {
                         resultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
                         resultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
-                        resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;                        
+                        resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
 
-                        if(verificationData.MiInfo.etaMI.rankCode == rankCode)
+                        if (verificationData.MiInfo.etaMI.rankCode == rankCode)
                             resultDataModels.Add(resultDataModel);
                     }
-
-                    //if (verificationData.MietaList == null && verificationData.MiInfo.etaMI == null)
-                    //{
-                    //    resultDataModels.Add(resultDataModel);
-                    //}
 
                     if (string.IsNullOrEmpty(rankCode))
                     {
                         resultDataModels.Add(resultDataModel);
                     }
-      
+
                     numberPosition++;
                 }
 
@@ -232,6 +228,8 @@ namespace WinForm
                 ++index;
 
             } while (index < numberRequests);
+
+            resultDataModels = resultDataModels.GroupBy(x => x.Org_title).Select(x => x.First()).ToList();
         }
 
         private async Task<string> GetNpenumber(string mietaURL, string regNumber)
