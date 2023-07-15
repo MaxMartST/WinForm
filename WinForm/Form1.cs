@@ -182,7 +182,7 @@ namespace WinForm
                     worksheet.Cells[i, 13] = resultDataModels[a].CompanyData.ShortNameCompany;
                     worksheet.Cells[i, 14] = resultDataModels[a].CompanyData.FullNameCompany;
                     worksheet.Cells[i, 15] = resultDataModels[a].CompanyData.Kpp;
-                    worksheet.Cells[i, 16] = resultDataModels[a].CompanyData.Ogrn;
+                    worksheet.Cells[i, 16] = resultDataModels[a].Org_title;
                     worksheet.Cells[i, 17] = resultDataModels[a].CompanyData.FullAddres;
                     worksheet.Cells[i, 18] = resultDataModels[a].CompanyData.GetNamePersone();
                     worksheet.Cells[i, 19] = resultDataModels[a].CompanyData.Phone;

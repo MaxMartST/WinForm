@@ -90,7 +90,7 @@ namespace WinForm
 
         public async Task SearchByFormAsync(SearchParameters searchParameters)
         {
-            var attributeLine = $"&mit_number=*{searchParameters.RegistrationNumber}*";
+            var attributeLine = $"&mit_number=*{searchParameters.RegistrationNumber}*&sort=org_title+asc";
 
             if (searchParameters.YearVerification != null)
                 attributeLine += $"&year={searchParameters.YearVerification}";
@@ -146,6 +146,32 @@ namespace WinForm
 
                 foreach (var item in root.Result.Items)
                 {
+                    // Проверка на дублирование
+                    var elem = resultDataModels
+                        .FirstOrDefault(x =>
+                            x.Org_title == item.Org_title
+                            && (x.Mi_modification == item.Mi_modification
+                                || x.Mi_modification == "Нет модификации"
+                                || x.Mi_modification == "-"
+                                || string.IsNullOrEmpty(x.Mi_modification)));
+
+                    if (elem != null)
+                    {
+                        //сравниваем по дате, берем самое свежее и заменяем на него
+                        var elemDateTime = DateTime.Parse(elem.Verification_date);
+                        var itemDateTime = DateTime.Parse(item.Verification_date);
+
+                        if (elemDateTime <= itemDateTime)
+                        {
+                            resultDataModels.Remove(elem);
+                        }
+                        else 
+                        {
+                            numberPosition++;
+                            continue;
+                        }
+                    }
+
                     (MiInfo MiInfo, VriInfo VriInfo, List<MietaItem> MietaList) verificationData;
 
                     var resultDataModel = new ResultDataModel()
@@ -217,9 +243,7 @@ namespace WinForm
                     }
 
                     if (string.IsNullOrEmpty(rankCode))
-                    {
                         resultDataModels.Add(resultDataModel);
-                    }
 
                     numberPosition++;
                 }
@@ -228,8 +252,6 @@ namespace WinForm
                 ++index;
 
             } while (index < numberRequests);
-
-            resultDataModels = resultDataModels.GroupBy(x => x.Org_title).Select(x => x.First()).ToList();
         }
 
         private async Task<string> GetNpenumber(string mietaURL, string regNumber)
