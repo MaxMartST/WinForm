@@ -164,6 +164,10 @@ namespace WinForm
                         if (elemDateTime <= itemDateTime)
                         {
                             resultDataModels.Remove(elem);
+                            //resultDataModels.RemoveAll(x => 
+                            //    x.Mi_modification == elem.Mi_modification 
+                            //    && x.Org_title == elem.Org_title 
+                            //    && x.Verification_date == elem.Verification_date);
                         }
                         else 
                         {
