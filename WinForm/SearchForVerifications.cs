@@ -90,34 +90,6 @@ namespace WinForm
             progress.Report($"({DateTime.Now}) Конец поиска.");
         }
 
-        //public async Task SearchByFormAsync(SearchParameters searchParameters)
-        //{
-        //    var attributeLine = $"&mit_number=*{searchParameters.RegistrationNumber}*&sort=org_title+asc";
-
-        //    if (searchParameters.YearVerification != null)
-        //        attributeLine += $"&year={searchParameters.YearVerification}";
-  
-        //    progress.Report($"({DateTime.Now}) Начало поиска.");
-        //    progress.Report($"({DateTime.Now}) Поиск поверок по регистрационному номеру \"{searchParameters.RegistrationNumber}\"");
-
-        //    try
-        //    {
-        //        await GetDataAsync(attributeLine, searchParameters.RankCode);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        progress.Report($"({DateTime.Now}) Ошибка: {ex.Message}" + Environment.NewLine);
-        //        throw;
-        //    }
-
-        //    var info = $"({DateTime.Now}) Получаны данные" + Environment.NewLine;
-        //    info += $"\tРегистрационный номер: {searchParameters.RegistrationNumber}" + Environment.NewLine
-        //        + $"\tГод поверки: {(searchParameters.YearVerification == null ? null : searchParameters.YearVerification)}" + Environment.NewLine;
-
-        //    progress.Report($"{info}");
-        //    progress.Report($"({DateTime.Now}) Конец поиска.");
-        //}
-
         public async Task SearchByFormAsync(SearchParameters searchParameters)
         {
             string year = searchParameters.YearVerification != null ? $"&year={searchParameters.YearVerification}" : $"&year={DateTime.Now.Year}";
@@ -155,7 +127,6 @@ namespace WinForm
             const int rows = 100;
             int index = 0, start = 0, numberPosition = 1;
             decimal numberRequests = 0;
-            //var section = rankCode == null ? "fundmetrology/eapi/vri?" : "fundmetrology/eapi/mieta?";
 
             do
             {
@@ -277,39 +248,7 @@ namespace WinForm
                         continue;
                     }
 
-                    //if (verificationData.MietaList != null && !string.IsNullOrEmpty(rankCode))
-                    //{
-                    //    foreach (var mieta in verificationData.MietaList)
-                    //    {
-                    //        if (mieta.rankCode != rankCode)
-                    //            continue;
-
-                    //        ResultDataModel addResultDataModel = (ResultDataModel)resultDataModel.Clone();
-
-                    //        addResultDataModel.rankCode = mieta.rankCode;
-                    //        addResultDataModel.regNumber = mieta.regNumber;
-                    //        addResultDataModel.schemaTitle = mieta.schemaTitle;
-                    //        addResultDataModel.Npenumber = await GetNpenumber(mieta.mietaURL, mieta.regNumber);
-
-                    //        resultDataModels.Add(addResultDataModel);
-                    //    }
-                    //}
-
-                    //if (verificationData.MiInfo.etaMI != null && !string.IsNullOrEmpty(rankCode))
-                    //{
-                    //    resultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
-                    //    resultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
-                    //    resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
-
-                    //    if (verificationData.MiInfo.etaMI.rankCode == rankCode)
-                    //        resultDataModels.Add(resultDataModel);
-                    //}
-
-                    //if (string.IsNullOrEmpty(rankCode))
-                    //    resultDataModels.Add(resultDataModel);
-
                     resultDataModels.Add(resultDataModel);
-
                     numberPosition++;
                 }
 
