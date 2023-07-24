@@ -13,6 +13,8 @@ using WinForm.ExceptionServise;
 using WinForm.Model;
 using WinForm.Model.RegistryElementModel;
 using WinForm.Model.Base;
+using WinForm.Model.VerificationResultModel;
+using System.Security.Cryptography;
 
 namespace WinForm
 {
@@ -22,7 +24,7 @@ namespace WinForm
         const string pubFsaGovUri = "https://pub.fsa.gov.ru";
         public List<ResultDataModel> resultDataModels { get; set; }
         private readonly IProgress<string> progress;
-        static HttpClient? client;
+        static HttpClient? fgisGost;
         static HttpClient? pubFsaGovClient;
 
         public SearchForVerifications(IProgress<string> progress)
@@ -46,10 +48,10 @@ namespace WinForm
 
             httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
 
-            client = new HttpClient();
-            client.BaseAddress = new Uri(fgisGostUri);
-            client.DefaultRequestHeaders.Add("User-Agent", "C# console program");
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            fgisGost = new HttpClient();
+            fgisGost.BaseAddress = new Uri(fgisGostUri);
+            fgisGost.DefaultRequestHeaders.Add("User-Agent", "C# console program");
+            fgisGost.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             pubFsaGovClient = new HttpClient();
             pubFsaGovClient.BaseAddress = new Uri(pubFsaGovUri);
@@ -88,13 +90,41 @@ namespace WinForm
             progress.Report($"({DateTime.Now}) Конец поиска.");
         }
 
+        //public async Task SearchByFormAsync(SearchParameters searchParameters)
+        //{
+        //    var attributeLine = $"&mit_number=*{searchParameters.RegistrationNumber}*&sort=org_title+asc";
+
+        //    if (searchParameters.YearVerification != null)
+        //        attributeLine += $"&year={searchParameters.YearVerification}";
+  
+        //    progress.Report($"({DateTime.Now}) Начало поиска.");
+        //    progress.Report($"({DateTime.Now}) Поиск поверок по регистрационному номеру \"{searchParameters.RegistrationNumber}\"");
+
+        //    try
+        //    {
+        //        await GetDataAsync(attributeLine, searchParameters.RankCode);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        progress.Report($"({DateTime.Now}) Ошибка: {ex.Message}" + Environment.NewLine);
+        //        throw;
+        //    }
+
+        //    var info = $"({DateTime.Now}) Получаны данные" + Environment.NewLine;
+        //    info += $"\tРегистрационный номер: {searchParameters.RegistrationNumber}" + Environment.NewLine
+        //        + $"\tГод поверки: {(searchParameters.YearVerification == null ? null : searchParameters.YearVerification)}" + Environment.NewLine;
+
+        //    progress.Report($"{info}");
+        //    progress.Report($"({DateTime.Now}) Конец поиска.");
+        //}
+
         public async Task SearchByFormAsync(SearchParameters searchParameters)
         {
-            var attributeLine = $"&mit_number=*{searchParameters.RegistrationNumber}*&sort=org_title+asc";
+            string year = searchParameters.YearVerification != null ? $"&year={searchParameters.YearVerification}" : $"&year={DateTime.Now.Year}";
 
-            if (searchParameters.YearVerification != null)
-                attributeLine += $"&year={searchParameters.YearVerification}";
-  
+            var attributeLine = searchParameters.RankCode == null ? $"&mit_number=*{searchParameters.RegistrationNumber}*" + year + "&sort=org_title+asc" 
+                : $"&mitype_num=*{searchParameters.RegistrationNumber}*&rankcode=*{searchParameters.RankCode}*" + year + "&sort=organization+asc";
+
             progress.Report($"({DateTime.Now}) Начало поиска.");
             progress.Report($"({DateTime.Now}) Поиск поверок по регистрационному номеру \"{searchParameters.RegistrationNumber}\"");
 
@@ -108,12 +138,13 @@ namespace WinForm
                 throw;
             }
 
-            var info = $"({DateTime.Now}) Получаны данные" + Environment.NewLine;
-            info += $"\tРегистрационный номер: {searchParameters.RegistrationNumber}" + Environment.NewLine
-                + $"\tГод поверки: {(searchParameters.YearVerification == null ? null : searchParameters.YearVerification)}" + Environment.NewLine;
+            var info = $"({DateTime.Now}) Поиск завершён" + Environment.NewLine;
+
+            info += $"\tНайдено записей: {resultDataModels.Count()}" + Environment.NewLine
+                + $"\tРегистрационный номер: {searchParameters.RegistrationNumber}" + Environment.NewLine
+                + $"\tГод поверки: {(searchParameters.YearVerification == null ? DateTime.Now.Year : searchParameters.YearVerification)}" + Environment.NewLine;
 
             progress.Report($"{info}");
-            progress.Report($"({DateTime.Now}) Конец поиска.");
         }
 
         private async Task GetDataAsync(string attributeLine, string? rankCode)
@@ -124,13 +155,15 @@ namespace WinForm
             const int rows = 100;
             int index = 0, start = 0, numberPosition = 1;
             decimal numberRequests = 0;
+            //var section = rankCode == null ? "fundmetrology/eapi/vri?" : "fundmetrology/eapi/mieta?";
 
             do
             {
                 Thread.Sleep(2000);
-                var relativeUri = $"fundmetrology/eapi/vri?start={start}&rows={rows}" + attributeLine;
+                var relativeUri = rankCode == null ? "fundmetrology/eapi/vri?" : "fundmetrology/eapi/mieta?" 
+                    + $"start={start}&rows={rows}" + attributeLine;
 
-                using HttpResponseMessage response = await client.GetAsync(relativeUri);
+                using HttpResponseMessage response = await fgisGost.GetAsync(relativeUri);
 
                 response.EnsureSuccessStatusCode();
                 var resp = await response.Content.ReadAsStringAsync();
@@ -146,28 +179,27 @@ namespace WinForm
 
                 foreach (var item in root.Result.Items)
                 {
-                    // Проверка на дублирование
-                    var elem = resultDataModels
+                    // Получить дубликат среди результирующих данных
+                    var duplicateData = resultDataModels
                         .FirstOrDefault(x =>
-                            x.Org_title == item.Org_title
-                            && (x.Mi_modification == item.Mi_modification
-                                || x.Mi_modification == "Нет модификации"
-                                || x.Mi_modification == "-"
-                                || string.IsNullOrEmpty(x.Mi_modification)));
+                            x.Organization == (rankCode == null ? item.Org_title : item.Organization)
+                            && (x.Modification == (rankCode == null ? item.Mi_modification : item.Modification)
+                            || x.Modification == "Нет модификации"
+                            || x.Modification == "-"
+                            || string.IsNullOrEmpty(x.Modification)));
 
-                    if (elem != null)
+                    if (duplicateData != null)
                     {
-                        //сравниваем по дате, берем самое свежее и заменяем на него
-                        var elemDateTime = DateTime.Parse(elem.Verification_date);
+                        //сравниваем по дате, берем самую новую поверку и заменяем на неё
+                        var duplicateDataDateTime = DateTime.Parse(duplicateData.Verification_date);
                         var itemDateTime = DateTime.Parse(item.Verification_date);
 
-                        if (elemDateTime <= itemDateTime)
+                        if (duplicateDataDateTime <= itemDateTime)
                         {
-                            resultDataModels.Remove(elem);
-                            //resultDataModels.RemoveAll(x => 
-                            //    x.Mi_modification == elem.Mi_modification 
-                            //    && x.Org_title == elem.Org_title 
-                            //    && x.Verification_date == elem.Verification_date);
+                            resultDataModels.RemoveAll(x =>
+                                x.Modification == duplicateData.Modification
+                                && x.Organization == duplicateData.Organization
+                                && x.Verification_date == duplicateData.Verification_date);
                         }
                         else 
                         {
@@ -177,23 +209,50 @@ namespace WinForm
                     }
 
                     (MiInfo MiInfo, VriInfo VriInfo, List<MietaItem> MietaList) verificationData;
+                    var resultDataModel = new ResultDataModel();
 
-                    var resultDataModel = new ResultDataModel()
+                    if (rankCode == null)
                     {
-                        Mit_notation = item.Mit_notation,
-                        Mit_number = item.Mit_number,
-                        Mit_title = item.Mit_title,
-                        Mi_modification = item.Mi_modification,
-                        Mi_number = item.Mi_number,
-                        Verification_date = item.Verification_date,
-                        Org_title = item.Org_title
-                    };
+                        resultDataModel.Mit_notation = item.Mit_notation;
+                        resultDataModel.Mit_number = item.Mit_number;
+                        resultDataModel.Mit_title = item.Mit_title;
+                        resultDataModel.Modification = item.Mi_modification;
+                        resultDataModel.Mi_number = item.Mi_number;
+                        resultDataModel.Verification_date = item.Verification_date;
+                        resultDataModel.Organization= item.Org_title;
+                    }
+                    else 
+                    {
+                        resultDataModel.rankCode = item.Rankcode;
+                        resultDataModel.regNumber = item.Number;
+                        resultDataModel.Npenumber = item.Npenumber;
+                        resultDataModel.Mit_number = item.Mitype_num;
+                        resultDataModel.Mit_title = item.Mitype;
+                        resultDataModel.Mit_notation = item.Minotation;
+                        resultDataModel.Modification = item.Modification;
+                        resultDataModel.Mi_number = item.Factory_num;
+                        resultDataModel.Verification_date = item.Verification_date;
+                        resultDataModel.Organization = item.Organization;
+                    }
 
                     try
                     {
                         progress.Report($"({DateTime.Now}) Поиск шифра клейма и ИНН для изделия с Регистрационным и Заводским номером: ({resultDataModel.Mit_number}\\{resultDataModel.Mi_number})");
 
-                        verificationData = await GetVerificationDataByVriId(item.Vri_id, numberPosition);
+                        if (rankCode == null)
+                        {
+                            //поиск шифра клейма для СИ
+                            verificationData = await GetVerificationDataByVriId(item.Vri_id, numberPosition);
+                        }
+                        else 
+                        {
+                            //поиск шифра клейма для Эталонов
+                            var vreiId = await GetIdVerificationByRmietaId(item.Rmieta_id);
+                            verificationData = await GetVerificationDataByVriId(vreiId, numberPosition);
+
+                            resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
+                        }
+
                         // шифра клейма
                         resultDataModel.signCipher = verificationData.VriInfo.signCipher;
 
@@ -218,36 +277,38 @@ namespace WinForm
                         continue;
                     }
 
-                    if (verificationData.MietaList != null && !string.IsNullOrEmpty(rankCode))
-                    {
-                        foreach (var mieta in verificationData.MietaList)
-                        {
-                            if (mieta.rankCode != rankCode)
-                                continue;
+                    //if (verificationData.MietaList != null && !string.IsNullOrEmpty(rankCode))
+                    //{
+                    //    foreach (var mieta in verificationData.MietaList)
+                    //    {
+                    //        if (mieta.rankCode != rankCode)
+                    //            continue;
 
-                            ResultDataModel addResultDataModel = (ResultDataModel)resultDataModel.Clone();
+                    //        ResultDataModel addResultDataModel = (ResultDataModel)resultDataModel.Clone();
 
-                            addResultDataModel.rankCode = mieta.rankCode;
-                            addResultDataModel.regNumber = mieta.regNumber;
-                            addResultDataModel.schemaTitle = mieta.schemaTitle;
-                            addResultDataModel.Npenumber = await GetNpenumber(mieta.mietaURL, mieta.regNumber);
+                    //        addResultDataModel.rankCode = mieta.rankCode;
+                    //        addResultDataModel.regNumber = mieta.regNumber;
+                    //        addResultDataModel.schemaTitle = mieta.schemaTitle;
+                    //        addResultDataModel.Npenumber = await GetNpenumber(mieta.mietaURL, mieta.regNumber);
 
-                            resultDataModels.Add(addResultDataModel);
-                        }
-                    }
+                    //        resultDataModels.Add(addResultDataModel);
+                    //    }
+                    //}
 
-                    if (verificationData.MiInfo.etaMI != null && !string.IsNullOrEmpty(rankCode))
-                    {
-                        resultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
-                        resultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
-                        resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
+                    //if (verificationData.MiInfo.etaMI != null && !string.IsNullOrEmpty(rankCode))
+                    //{
+                    //    resultDataModel.rankCode = verificationData.MiInfo.etaMI.rankCode;
+                    //    resultDataModel.regNumber = verificationData.MiInfo.etaMI.regNumber;
+                    //    resultDataModel.schemaTitle = verificationData.MiInfo.etaMI.schemaTitle;
 
-                        if (verificationData.MiInfo.etaMI.rankCode == rankCode)
-                            resultDataModels.Add(resultDataModel);
-                    }
+                    //    if (verificationData.MiInfo.etaMI.rankCode == rankCode)
+                    //        resultDataModels.Add(resultDataModel);
+                    //}
 
-                    if (string.IsNullOrEmpty(rankCode))
-                        resultDataModels.Add(resultDataModel);
+                    //if (string.IsNullOrEmpty(rankCode))
+                    //    resultDataModels.Add(resultDataModel);
+
+                    resultDataModels.Add(resultDataModel);
 
                     numberPosition++;
                 }
@@ -258,6 +319,35 @@ namespace WinForm
             } while (index < numberRequests);
         }
 
+        private async Task<string> GetIdVerificationByRmietaId(string rmietaId)
+        {
+            Thread.Sleep(2000);
+            progress.Report($"({DateTime.Now}) Поиск идентификатора поверки для эталона с id: \"{rmietaId}\"");
+
+            using HttpResponseMessage httpResponseMessage = await fgisGost.GetAsync($"fundmetrology/eapi/mieta/{rmietaId}");
+            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                var json = JObject.Parse(content);
+
+                var cresults = json["result"]["cresults"];
+
+                if (cresults.Count() == 0)
+                    throw new Exception("Неудалось найти идентификатор о сведении результатах поверки СИ, применяемого в качестве эталона");
+
+                var vriId = cresults[0]["vri_id"].ToString();
+                progress.Report($"({DateTime.Now}) Идентификатора поверки равен: \"{vriId}\"");
+
+                return vriId;
+            }
+
+            if (httpResponseMessage.Content != null)
+                httpResponseMessage.Content.Dispose();
+
+            throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
+        }
+
         private async Task<string> GetNpenumber(string mietaURL, string regNumber)
         {
             Thread.Sleep(2000);
@@ -266,7 +356,7 @@ namespace WinForm
             var rmieta_id = mietaURL.Substring(mietaURL.LastIndexOf("/") + 1);
             var etalonUri = $"fundmetrology/cm/icdb/mieta/select?q=rmieta_id:{rmieta_id}&fl=number,mitype_num,mitype,minotation,modification,factory_num,year,schematype,schematitle,npenumber,npeUrl,rankcode,rankclass,applicability";
 
-            using HttpResponseMessage httpResponseMessage = await client.GetAsync(etalonUri);
+            using HttpResponseMessage httpResponseMessage = await fgisGost.GetAsync(etalonUri);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
 
             if (httpResponseMessage.IsSuccessStatusCode)
@@ -292,7 +382,7 @@ namespace WinForm
 
             var relativeUri = $"fundmetrology/eapi/vri/{vri_id}";
             
-            using HttpResponseMessage httpResponseMessage = await client.GetAsync(relativeUri);
+            using HttpResponseMessage httpResponseMessage = await fgisGost.GetAsync(relativeUri);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
 
             if (httpResponseMessage.IsSuccessStatusCode)
@@ -311,6 +401,30 @@ namespace WinForm
             throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
         }
 
+        private async Task<(MiInfo MiInfo, VriInfo VriInfo)> GetVerificationDataByVriId(string vri_id)
+        {
+            Thread.Sleep(2000);
+            progress.Report($"({DateTime.Now}) Поиск шифра клейма");
+
+            using HttpResponseMessage httpResponseMessage = await fgisGost.GetAsync($"fundmetrology/eapi/vri/{vri_id}");
+            var content = await httpResponseMessage.Content.ReadAsStringAsync();
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                Root root = JsonConvert.DeserializeObject<Root>(content);
+
+                var signCipher = root.Result.vriInfo.signCipher;
+                progress.Report($"({DateTime.Now}) Шифр клейма равен \"{signCipher}\"");
+
+                return (root.Result.miInfo, root.Result.vriInfo);
+            }
+
+            if (httpResponseMessage.Content != null)
+                httpResponseMessage.Content.Dispose();
+
+            throw new SimpleHttpResponseException(httpResponseMessage.StatusCode, content);
+        }
+
         private async Task<string> GetTaxpayerIdentificationNumber(string signCipher)
         {
             Thread.Sleep(2000);
@@ -318,7 +432,7 @@ namespace WinForm
 
             var relativeUri = $"fundmetrology/cm/xcdb/vcs/select?fq=sign:*{signCipher}*&q=*&fl=vcs_id,sign,act_no,act_date,title,inn,kpp,ogrn&sort=act_date+desc,sign+asc&rows=20&start=0";
 
-            using HttpResponseMessage httpResponseMessage = await client.GetAsync(relativeUri);
+            using HttpResponseMessage httpResponseMessage = await fgisGost.GetAsync(relativeUri);
             var content = await httpResponseMessage.Content.ReadAsStringAsync();
 
             if (httpResponseMessage.IsSuccessStatusCode)

@@ -19,5 +19,16 @@ namespace WinForm.Model.VerificationResultModel
         public string Valid_date { get; set; }
         public string Result_docnum { get; set; }
         public string Applicability { get; set; }
+        public string Rmieta_id { get; set; }
+        public string Number { get; set; }
+        public string Organization { get; set; }
+        public string Mitype_num { get; set; }
+        public string Mitype { get; set; }
+        public string Minotation { get; set; }
+        public string Modification { get; set; }
+        public string Factory_num { get; set; }
+        public int Year { get; set; }
+        public string Npenumber { get; set; }
+        public string Rankcode { get; set; }
     }
 }

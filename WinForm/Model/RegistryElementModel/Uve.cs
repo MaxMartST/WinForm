@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace WinForm.Model.RegistryElementModel
 {
-    public class Means
+    public class Uve
     {
-        public List<MietaItem> mieta { get; set; }
-        public List<Uve> uve { get; set; }
-        public List<MisItem> mis { get; set; }
+        public string number { get; set; }
+        public string title { get; set; }
+        public string uveURL { get; set; }
     }
 }

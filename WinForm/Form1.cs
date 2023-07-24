@@ -171,7 +171,7 @@ namespace WinForm
                     worksheet.Cells[i, 2] = resultDataModels[a].Npenumber;
                     worksheet.Cells[i, 3] = resultDataModels[a].Mit_title;
                     worksheet.Cells[i, 4] = resultDataModels[a].Mit_notation;
-                    worksheet.Cells[i, 5] = resultDataModels[a].Mi_modification;
+                    worksheet.Cells[i, 5] = resultDataModels[a].Modification;
                     worksheet.Cells[i, 6] = resultDataModels[a].Mi_number;
                     worksheet.Cells[i, 7] = resultDataModels[a].regNumber;
                     worksheet.Cells[i, 8] = resultDataModels[a].rankCode;
@@ -182,7 +182,7 @@ namespace WinForm
                     worksheet.Cells[i, 13] = resultDataModels[a].CompanyData.ShortNameCompany;
                     worksheet.Cells[i, 14] = resultDataModels[a].CompanyData.FullNameCompany;
                     worksheet.Cells[i, 15] = resultDataModels[a].CompanyData.Kpp;
-                    worksheet.Cells[i, 16] = resultDataModels[a].Org_title;
+                    worksheet.Cells[i, 16] = resultDataModels[a].CompanyData.Ogrn;
                     worksheet.Cells[i, 17] = resultDataModels[a].CompanyData.FullAddres;
                     worksheet.Cells[i, 18] = resultDataModels[a].CompanyData.GetNamePersone();
                     worksheet.Cells[i, 19] = resultDataModels[a].CompanyData.Phone;
